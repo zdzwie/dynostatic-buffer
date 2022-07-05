@@ -13,5 +13,26 @@
 
 #pragma once
 
-#define DS_BUFFER_MEMORY_SIZE 1024 /**< Size of buffer prepared for dynostatic-buffer. */
-#define DS_LOG_ENABLE true         /**< Enable or disable logging from dynostatic-buffer. */
+#ifndef DS_BUFFER_MEMORY_SIZE /**< If You not use CMake. */
+    #define DS_BUFFER_MEMORY_SIZE 1024 /**< Size of buffer prepared for dynostatic-buffer. */
+#endif
+
+#ifndef DS_LOG_ENABLE /**< If You not use CMake. */
+    #define DS_LOG_ENABLE false         /**< Enable or disable logging from dynostatic-buffer. */
+#endif
+
+#ifndef DS_MAX_ALLOCATION_COUNT /**< If You not use CMake. */
+    #define DS_MAX_ALLOCATION_COUNT 10  /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
+#endif
+
+#ifndef DDS_MAX_ALLOCATION_SIZE /**< If You not use CMake. */
+    #define DDS_MAX_ALLOCATION_SIZE 10  /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
+#endif
+
+#if (DS_BUFFER_MEMORY_SIZE == 0) || (DS_MAX_ALLOCATION_COUNT == 0) || (DDS_MAX_ALLOCATION_SIZE == 0)
+    #error Invalid config!
+#endif
+
+#if DS_BUFFER_MEMORY_SIZE < DS_MAX_ALLOCATION_COUNT
+    #error To big max allocation count!
+#endif

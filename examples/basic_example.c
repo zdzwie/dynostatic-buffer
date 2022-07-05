@@ -13,7 +13,16 @@
 
 #include "dynostatic-buffer.h"
 
+void example_logger(const char *message, size_t len)
+{
+    if (len == 0) {
+        return;
+    }
+    printf("%s", message);
+}
+
 int main(void)
 {
+    ds_initialize_allocation(example_logger);
     printf("TODO: end this example.");
 }
