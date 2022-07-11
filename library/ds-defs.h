@@ -25,11 +25,11 @@
     #define DS_MAX_ALLOCATION_COUNT 10  /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
 #endif
 
-#ifndef DDS_MAX_ALLOCATION_SIZE /**< If You not use CMake. */
-    #define DDS_MAX_ALLOCATION_SIZE 10  /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
+#ifndef DS_MAX_ALLOCATION_SIZE /**< If You not use CMake. */
+    #define DS_MAX_ALLOCATION_SIZE 10  /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
 #endif
 
-#if (DS_BUFFER_MEMORY_SIZE == 0) || (DS_MAX_ALLOCATION_COUNT == 0) || (DDS_MAX_ALLOCATION_SIZE == 0)
+#if (DS_BUFFER_MEMORY_SIZE == 0) || (DS_MAX_ALLOCATION_COUNT == 0) || (DS_MAX_ALLOCATION_SIZE == 0)
     #error Invalid config!
 #endif
 
