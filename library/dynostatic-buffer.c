@@ -22,14 +22,25 @@
 #define DS_ADDR_T unsigned int /**< Define type of address in processor memory. */
 
 /**
+ * @enum ds_allocator_status
+ * @brief Current status of allocator.
+ */
+typedef enum {
+    DS_NOT_USED  = 0x00, /**< Current allocator is not used to describe memory block. */
+    DS_FREE      = 0x01, /**< Current block is used to describe free memory block. */
+    DS_ALLOCATED = 0x02  /**< Current block is used to describe allocated memory block. */
+} ds_allocator_status;
+
+/**
  * @struct ds_allocator_t
  * @brief Definitions of allocator used to handle information about memory chunks in ds-buffer.
  */
-typedef struct {
+typedef PACK(struct {
     size_t head; /**< Place in memory, where allocation part is started. */
     size_t size; /**< Size of current allocated memory chunk. */
-    bool  using; /**< Current allocator is in use by another parts of code.*/
-} ds_allocator_t;
+
+    ds_allocator_status  using; /**< Current allocator is in use by another parts of code.*/
+} ds_allocator_t);
 
 /**
  * @struct dynostatic_buffer_t
@@ -37,6 +48,7 @@ typedef struct {
  */
 static struct {
     uint8_t memory[DS_BUFFER_MEMORY_SIZE]; /**< Memory declared for buffer. */
+    size_t data_tail;                      /**< Tail of data allocated in buffer. */
 
     bool initialized; /**< Dynostatic buffer is initialized. */
     bool full;        /**< There was no empty space in buffer. */
@@ -132,6 +144,83 @@ ds_err_code_t ds_realloc(void **p_memory, size_t size)
 
     if ((p_memory == NULL) || (*p_memory == NULL) || (size == 0)) {
         return EDS_INVALID_PARAMS;
+    }
+
+    return EDS_OK;
+}
+
+ds_err_code_t ds_get_memory_usage(uint8_t *p_memory_usage)
+{
+    size_t usage = 0;
+    if (p_memory_usage == NULL) {
+        return EDS_INVALID_PARAMS;
+    }
+
+    if (!dynostatic_buffer.initialized) {
+        return EDS_NO_INIT;
+    }
+
+    for (uint8_t iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
+        if (dynostatic_buffer.allocators[iter].using == DS_ALLOCATED) {
+            usage += dynostatic_buffer.allocators[iter].size;
+        }
+    }
+
+    if (usage > DS_BUFFER_MEMORY_SIZE) {
+        *p_memory_usage = 0;
+        return EDS_CRITICAL_ERR;
+    }
+
+    *p_memory_usage = (uint8_t) ((100 * usage) / DS_BUFFER_MEMORY_SIZE);
+    return EDS_OK;
+}
+
+ds_err_code_t ds_get_max_new_allocation_size(size_t *p_max_new_allocation)
+{
+    if (p_max_new_allocation == NULL) {
+        return EDS_INVALID_PARAMS;
+    }
+
+    if (!dynostatic_buffer.initialized) {
+        return EDS_NO_INIT;
+    }
+
+    *p_max_new_allocation = 0;
+
+    for (uint8_t iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
+        if (dynostatic_buffer.allocators[iter].using == DS_FREE) {
+            if (dynostatic_buffer.allocators[iter].size > *p_max_new_allocation) {
+                *p_max_new_allocation = dynostatic_buffer.allocators[iter].size;
+            }
+        }
+    }
+
+    if ((DS_BUFFER_MEMORY_SIZE - dynostatic_buffer.data_tail) > *p_max_new_allocation) {
+        *p_max_new_allocation = (DS_BUFFER_MEMORY_SIZE - dynostatic_buffer.data_tail);
+    }
+
+    if (*p_max_new_allocation > DS_MAX_ALLOCATION_SIZE ) {
+        *p_max_new_allocation = DS_MAX_ALLOCATION_SIZE;
+    }
+
+    return EDS_OK;
+}
+
+ds_err_code_t ds_get_free_allocator_cnt(size_t *free_allocators)
+{
+    if (free_allocators == NULL) {
+        return EDS_INVALID_PARAMS;
+    }
+
+    if (!dynostatic_buffer.initialized) {
+        return EDS_NO_INIT;
+    }
+
+    *free_allocators = 0;
+    for (uint8_t iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
+        if (dynostatic_buffer.allocators[iter].using == DS_NOT_USED) {
+            *free_allocators++;
+        }
     }
 
     return EDS_OK;

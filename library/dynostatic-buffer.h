@@ -28,6 +28,22 @@
     } \
 } while(0)
 
+#ifdef __GNUC__
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#endif
+
+#ifdef _MSC_VER
+#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#endif
+
+#ifdef __clang__
+#define PACK( __Declaration__ ) __attribute__((__packed__)) __Declaration__
+#endif
+
+#ifdef __llvm__
+#define PACK( __Declaration__ ) #pragma pack(1) __Declaration__ #pragma options align=reset
+#endif
+
 /**
  * @enum ds_err_codes
  * @brief All error codes, which can be returned by dynostatic-buffer memory allocation.
@@ -41,6 +57,7 @@ typedef enum ds_err_codes {
     EDS_NO_ALLOCATORS    = 0x05, /**< No free allocators to use. */
     EDS_TOO_BIG_CHUNK    = 0x06, /**< Demanded size of chunk is bigger than configured max size. */
     EDS_MEMORY_OUT_OF_DS = 0x07, /**< Pointer given to deallocate is not allocate in dynostatic-buffer. */
+    EDS_CRITICAL_ERR     = 0x08, /**< Critical error detected. */
     //TODO: Finish error codes
 } ds_err_code_t;
 
@@ -118,3 +135,37 @@ ds_err_code_t ds_calloc(void **p_memory, size_t len, size_t size_of_elem);
  * @retval EDS_TOO_BIG_CHUNK Demanded size of memory block is bigger than configured max size.
  */
 ds_err_code_t ds_realloc(void **p_memory, size_t size);
+
+/**
+ * @brief Get usage of memory allocated for dynostatic-buffer in %.
+ *
+ * @param[out] memory_usage Pointer to variable where memory usage will be saved.
+ *
+ * @retval EDS_OK Memory usage is properly read.
+ * @retval EDS_NO_INIT Dynostatic-buffer is not initialized.
+ * @retval EDS_INVALID_PARAMS Given parameters are invalid.
+ * @retval EDS_CRITICAL_ERR More than available memory allocated.
+ */
+ds_err_code_t ds_get_memory_usage(uint8_t *p_memory_usage);
+
+/**
+ * @brief Get size of maximal memory chunk, which could be allocated.
+ *
+ * @param[out] p_max_new_allocation Pointer to variable, where max size will be written.
+ *
+ * @retval EDS_OK Max size of new allocation is properly read.
+ * @retval EDS_NO_INIT Dynostatic-buffer is not initialized.
+ * @retval EDS_INVALID_PARAMS Given parameters are invalid.
+ */
+ds_err_code_t ds_get_max_new_allocation_size(size_t *p_max_new_allocation);
+
+/**
+ * @brief Check how many new allocation could be made in dynostatic-buffer.
+ *
+ * @param[out] free_allocators Pointer to variable, where free allocators count will be written.
+ *
+ * @retval EDS_OK Free allocator size is properly read.
+ * @retval EDS_NO_INIT Dynostatic-buffer is not initialized.
+ * @retval EDS_INVALID_PARAMS Given parameters are invalid.
+ */
+ds_err_code_t ds_get_free_allocator_cnt(size_t *free_allocators);
