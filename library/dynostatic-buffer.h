@@ -139,7 +139,7 @@ ds_err_code_t ds_realloc(void **p_memory, size_t size);
 /**
  * @brief Get usage of memory allocated for dynostatic-buffer in %.
  *
- * @param[out] memory_usage Pointer to variable where memory usage will be saved.
+ * @param[out] p_memory_usage Pointer to variable where memory usage will be saved.
  *
  * @retval EDS_OK Memory usage is properly read.
  * @retval EDS_NO_INIT Dynostatic-buffer is not initialized.
