@@ -162,10 +162,10 @@ ds_err_code_t ds_get_max_new_allocation_size(size_t *p_max_new_allocation);
 /**
  * @brief Check how many new allocation could be made in dynostatic-buffer.
  *
- * @param[out] free_allocators Pointer to variable, where free allocators count will be written.
+ * @param[out] p_free_allocators Pointer to variable, where free allocators count will be written.
  *
  * @retval EDS_OK Free allocator size is properly read.
  * @retval EDS_NO_INIT Dynostatic-buffer is not initialized.
  * @retval EDS_INVALID_PARAMS Given parameters are invalid.
  */
-ds_err_code_t ds_get_free_allocator_cnt(size_t *free_allocators);
+ds_err_code_t ds_get_free_allocator_cnt(size_t *p_free_allocators);
