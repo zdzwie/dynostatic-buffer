@@ -16,6 +16,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @def DS_VAL_ERR_AND_RET
  * @brief Check correctness of function return value. In case of error return it.
@@ -169,3 +173,7 @@ ds_err_code_t ds_get_max_new_allocation_size(size_t *p_max_new_allocation);
  * @retval EDS_INVALID_PARAMS Given parameters are invalid.
  */
 ds_err_code_t ds_get_free_allocator_cnt(size_t *p_free_allocators);
+
+#ifdef __cplusplus
+extern "C" {
+#endif

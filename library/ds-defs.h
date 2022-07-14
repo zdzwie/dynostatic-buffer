@@ -13,6 +13,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef DS_BUFFER_MEMORY_SIZE /**< If You not use CMake. */
     #define DS_BUFFER_MEMORY_SIZE 1024 /**< Size of buffer prepared for dynostatic-buffer. */
 #endif
@@ -35,4 +39,8 @@
 
 #if DS_BUFFER_MEMORY_SIZE < DS_MAX_ALLOCATION_COUNT
     #error To big max allocation count!
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
