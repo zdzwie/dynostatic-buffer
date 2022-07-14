@@ -55,7 +55,7 @@ static struct {
     ds_allocator_t allocators[DS_MAX_ALLOCATION_COUNT];
 
     #ifdef DS_LOG_ENABLE
-        logger_func_t logger; /**< Pointer to function using to print some additional debug information. */
+    logger_func_t logger; /**< Pointer to function using to print some additional debug information. */
     #endif
 } dynostatic_buffer;
 
@@ -107,8 +107,8 @@ ds_err_code_t ds_free(void **p_memory)
         return EDS_INVALID_PARAMS;
     }
 
-    if (((uint8_t *)*p_memory < dynostatic_buffer.memory) &&
-       ((uint8_t *) *p_memory > ((dynostatic_buffer.memory + DS_BUFFER_MEMORY_SIZE )))) {
+    if (((uint8_t *)*p_memory < dynostatic_buffer.memory)
+        && ((uint8_t *) *p_memory > ((dynostatic_buffer.memory + DS_BUFFER_MEMORY_SIZE)))) {
         DS_LOG("Given pointer is not allocated in DS buffer.\n\r");
         return EDS_MEMORY_OUT_OF_DS;
     }
@@ -206,9 +206,9 @@ ds_err_code_t ds_get_max_new_allocation_size(size_t *p_max_new_allocation)
     return EDS_OK;
 }
 
-ds_err_code_t ds_get_free_allocator_cnt(size_t *free_allocators)
+ds_err_code_t ds_get_free_allocator_cnt(size_t *p_free_allocators)
 {
-    if (free_allocators == NULL) {
+    if (p_free_allocators == NULL) {
         return EDS_INVALID_PARAMS;
     }
 
@@ -216,10 +216,10 @@ ds_err_code_t ds_get_free_allocator_cnt(size_t *free_allocators)
         return EDS_NO_INIT;
     }
 
-    *free_allocators = 0;
+    *p_free_allocators = 0;
     for (uint8_t iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
         if (dynostatic_buffer.allocators[iter].using == DS_NOT_USED) {
-            *free_allocators++;
+            *p_free_allocators++;
         }
     }
 

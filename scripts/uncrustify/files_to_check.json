@@ -1,0 +1,17 @@
+{
+    "folders" : [
+        {
+            "folder" : "library",
+            "list" : [
+                {"name" : "dynostatic-buffer", "exts" : ["c", "h"]},
+                {"name" : "ds-defs", "exts" : ["h"]}
+            ]
+        },
+        {
+            "folder" : "examples",
+            "list" : [
+                {"name" : "basic_example", "exts" : ["c"]}
+            ]
+        }
+    ]
+}

@@ -22,26 +22,26 @@
  *
  * @param[in] err Return value to validate.
  */
-#define DS_VAL_ERR_AND_RET(err) do { \
-    if ((ds_err_code_t)err != EDS_OK) { \
-        return err; \
-    } \
-} while(0)
+#define DS_VAL_ERR_AND_RET(err) do {        \
+        if ((ds_err_code_t)err != EDS_OK) { \
+            return err;                     \
+        }                                   \
+} while (0)
 
 #ifdef __GNUC__
-#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#define PACK(__Declaration__) __Declaration__ __attribute__((__packed__))
 #endif
 
 #ifdef _MSC_VER
-#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#define PACK(__Declaration__) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
 #endif
 
 #ifdef __clang__
-#define PACK( __Declaration__ ) __attribute__((__packed__)) __Declaration__
+#define PACK(__Declaration__) __attribute__((__packed__)) __Declaration__
 #endif
 
 #ifdef __llvm__
-#define PACK( __Declaration__ ) #pragma pack(1) __Declaration__ #pragma options align=reset
+#define PACK(__Declaration__) #pragma pack(1) __Declaration__ #pragma options align = reset
 #endif
 
 /**
@@ -162,10 +162,10 @@ ds_err_code_t ds_get_max_new_allocation_size(size_t *p_max_new_allocation);
 /**
  * @brief Check how many new allocation could be made in dynostatic-buffer.
  *
- * @param[out] free_allocators Pointer to variable, where free allocators count will be written.
+ * @param[out] p_free_allocators Pointer to variable, where free allocators count will be written.
  *
  * @retval EDS_OK Free allocator size is properly read.
  * @retval EDS_NO_INIT Dynostatic-buffer is not initialized.
  * @retval EDS_INVALID_PARAMS Given parameters are invalid.
  */
-ds_err_code_t ds_get_free_allocator_cnt(size_t *free_allocators);
+ds_err_code_t ds_get_free_allocator_cnt(size_t *p_free_allocators);
