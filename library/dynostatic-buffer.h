@@ -22,26 +22,26 @@
  *
  * @param[in] err Return value to validate.
  */
-#define DS_VAL_ERR_AND_RET(err) do { \
-    if ((ds_err_code_t)err != EDS_OK) { \
-        return err; \
-    } \
-} while(0)
+#define DS_VAL_ERR_AND_RET(err) do {        \
+        if ((ds_err_code_t)err != EDS_OK) { \
+            return err;                     \
+        }                                   \
+} while (0)
 
 #ifdef __GNUC__
-#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#define PACK(__Declaration__) __Declaration__ __attribute__((__packed__))
 #endif
 
 #ifdef _MSC_VER
-#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#define PACK(__Declaration__) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
 #endif
 
 #ifdef __clang__
-#define PACK( __Declaration__ ) __attribute__((__packed__)) __Declaration__
+#define PACK(__Declaration__) __attribute__((__packed__)) __Declaration__
 #endif
 
 #ifdef __llvm__
-#define PACK( __Declaration__ ) #pragma pack(1) __Declaration__ #pragma options align=reset
+#define PACK(__Declaration__) #pragma pack(1) __Declaration__ #pragma options align = reset
 #endif
 
 /**
