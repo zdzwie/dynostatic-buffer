@@ -12,6 +12,12 @@
             "list" : [
                 {"name" : "basic_example", "exts" : ["c"]}
             ]
+        },
+        {
+            "folder" : "tests/unit",
+            "list" : [
+                {"name" : "initialization_tests", "exts" : ["cpp"]}
+            ]
         }
     ]
 }

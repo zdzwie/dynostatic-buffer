@@ -174,6 +174,13 @@ ds_err_code_t ds_get_max_new_allocation_size(size_t *p_max_new_allocation);
  */
 ds_err_code_t ds_get_free_allocator_cnt(size_t *p_free_allocators);
 
+#ifdef TEST_LIBRARY
+/**
+ * @brief Deinitialize allocation for test purposes.
+ */
+void ds_deinit_allocation(void);
+#endif
+
 #ifdef __cplusplus
-extern "C" {
+}
 #endif
