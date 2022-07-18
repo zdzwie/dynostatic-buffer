@@ -3,3 +3,6 @@ build/
 
 #VSC connected files
 .vscode/
+
+#GTest framework output
+tests/unit/testing

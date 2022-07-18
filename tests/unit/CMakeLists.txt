@@ -18,13 +18,17 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(
-  ds_tests
-  initialization_tests.cpp
-  ../../library/dynostatic-buffer.c
+add_executable( ds_tests
+                utests-common.cpp
+                utests-init.cpp
+                utests-malloc.cpp
+                ../../library/dynostatic-buffer.c
 )
 
-target_include_directories(ds_tests PUBLIC "${PROJECT_SOURCE_DIR}/../../library")
+target_include_directories(ds_tests PUBLIC
+      "${PROJECT_SOURCE_DIR}/../../library"
+      "${PROJECT_SOURCE_DIR}/../utils"
+    )
 add_definitions(-DTEST_LIBRARY)
 
 target_link_libraries(

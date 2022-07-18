@@ -30,14 +30,14 @@ extern "C" {
 #endif
 
 #ifndef DS_MAX_ALLOCATION_SIZE /**< If You not use CMake. */
-    #define DS_MAX_ALLOCATION_SIZE 10  /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
+    #define DS_MAX_ALLOCATION_SIZE 256  /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
 #endif
 
 #if (DS_BUFFER_MEMORY_SIZE == 0) || (DS_MAX_ALLOCATION_COUNT == 0) || (DS_MAX_ALLOCATION_SIZE == 0)
     #error Invalid config!
 #endif
 
-#if DS_BUFFER_MEMORY_SIZE < DS_MAX_ALLOCATION_COUNT
+#if DS_BUFFER_MEMORY_SIZE < DS_MAX_ALLOCATION_SIZE
     #error To big max allocation count!
 #endif
 

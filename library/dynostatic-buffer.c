@@ -90,7 +90,7 @@ ds_err_code_t ds_malloc(void **p_memory, size_t size)
         return EDS_NO_INIT;
     }
 
-    if ((p_memory == NULL) || (*p_memory == NULL) || (size == 0)) {
+    if ((p_memory == NULL) || (size == 0)) {
         return EDS_INVALID_PARAMS;
     }
 

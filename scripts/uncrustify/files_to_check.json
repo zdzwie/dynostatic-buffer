@@ -16,7 +16,15 @@
         {
             "folder" : "tests/unit",
             "list" : [
-                {"name" : "initialization_tests", "exts" : ["cpp"]}
+                {"name" : "utests-common", "exts" : ["cpp", "hpp"]},
+                {"name" : "utests-init",   "exts" : ["cpp"]},
+                {"name" : "utests-malloc", "exts" : ["cpp"]}
+            ]
+        },
+        {
+            "folder" : "tests/utils",
+            "list" : [
+                {"name" : "gtest_out", "exts" : ["hpp"]}
             ]
         }
     ]
