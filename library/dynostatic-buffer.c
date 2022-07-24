@@ -90,7 +90,7 @@ ds_err_code_t ds_malloc(void **p_memory, size_t size)
         return EDS_NO_INIT;
     }
 
-    if ((p_memory == NULL) || (*p_memory == NULL) || (size == 0)) {
+    if ((p_memory == NULL) || (size == 0)) {
         return EDS_INVALID_PARAMS;
     }
 
@@ -225,3 +225,10 @@ ds_err_code_t ds_get_free_allocator_cnt(size_t *p_free_allocators)
 
     return EDS_OK;
 }
+
+#ifdef TEST_LIBRARY
+void ds_deinit_allocation(void)
+{
+    dynostatic_buffer.initialized = false;
+}
+#endif
