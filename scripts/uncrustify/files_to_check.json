@@ -1,0 +1,33 @@
+{
+    "folders" : [
+        {
+            "folder" : "library",
+            "list" : [
+                {"name" : "dynostatic-buffer", "exts" : ["c", "h"]},
+                {"name" : "ds-defs", "exts" : ["h"]}
+            ]
+        },
+        {
+            "folder" : "examples",
+            "list" : [
+                {"name" : "basic_example", "exts" : ["c"]}
+            ]
+        },
+        {
+            "folder" : "tests/unit",
+            "list" : [
+                {"name" : "utests-common", "exts" : ["cpp", "hpp"]},
+                {"name" : "utests-init",   "exts" : ["cpp"]},
+                {"name" : "utests-malloc", "exts" : ["cpp"]},
+                {"name" : "utests-free", "exts" : ["cpp"]},
+                {"name" : "utests-multi-alloc", "exts" : ["cpp"]}
+            ]
+        },
+        {
+            "folder" : "tests/utils",
+            "list" : [
+                {"name" : "gtest_out", "exts" : ["hpp"]}
+            ]
+        }
+    ]
+}
