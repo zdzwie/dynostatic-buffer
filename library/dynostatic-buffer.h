@@ -62,6 +62,7 @@ typedef enum ds_err_codes {
     EDS_TOO_BIG_CHUNK    = 0x06, /**< Demanded size of chunk is bigger than configured max size. */
     EDS_MEMORY_OUT_OF_DS = 0x07, /**< Pointer given to deallocate is not allocate in dynostatic-buffer. */
     EDS_CRITICAL_ERR     = 0x08, /**< Critical error detected. */
+    EDS_PTR_ALLOC_YET    = 0x09, /**< Pointer given to function is currently allocated by ds-buffer.*/
     //TODO: Finish error codes
 } ds_err_code_t;
 

@@ -18,7 +18,6 @@
 #include "dynostatic-buffer.h"
 #include "ds-defs.h"
 
-
 TEST(Free_Tests, Free_Uninitialized)
 {
     char *pointer = NULL;

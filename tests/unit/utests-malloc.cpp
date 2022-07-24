@@ -20,8 +20,6 @@
 
 #include <cmath>
 
-constexpr uint8_t max_memory_usage_dev = 2; /**< Maximal deviation between calculated and read memory usage. */
-
 TEST(Malloc_Tests, Malloc_UnInitialized)
 {
     char *pointer = NULL;

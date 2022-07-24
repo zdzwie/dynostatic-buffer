@@ -18,7 +18,9 @@
             "list" : [
                 {"name" : "utests-common", "exts" : ["cpp", "hpp"]},
                 {"name" : "utests-init",   "exts" : ["cpp"]},
-                {"name" : "utests-malloc", "exts" : ["cpp"]}
+                {"name" : "utests-malloc", "exts" : ["cpp"]},
+                {"name" : "utests-free", "exts" : ["cpp"]},
+                {"name" : "utests-multi-alloc", "exts" : ["cpp"]}
             ]
         },
         {

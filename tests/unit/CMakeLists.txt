@@ -23,6 +23,7 @@ add_executable( ds_tests
                 utests-init.cpp
                 utests-malloc.cpp
                 utests-free.cpp
+                utests-multi-alloc.cpp
                 ../../library/dynostatic-buffer.c
 )
 
