@@ -4,5 +4,11 @@ build/
 #VSC connected files
 .vscode/
 
+#CLion conencted files and folders
+.idea/
+cmake-build-release/
+cmake-build-debug/
+
 #GTest framework output
-tests/unit/testing
+tests/unit/testing/
+tests/unit/Testing/

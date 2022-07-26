@@ -60,10 +60,10 @@ TEST(Malloc_Tests, Malloc_To_Many_Times)
     char *pointer = NULL;
     size_t allocation_len = 1;
 
-    ASSERT_TRUE(DS_MAX_ALLOCATION_COUNT >= DS_MAX_ALLOCATION_SIZE);
+    ASSERT_TRUE((DS_MAX_ALLOCATION_COUNT * DS_MAX_ALLOCATION_SIZE)  >= DS_BUFFER_MEMORY_SIZE);
     ASSERT_EQ(ds_initialize_allocation(utests_stdout_logger), EDS_OK);
 
-    for (unsigned int iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
+    for (unsigned int iter = 0; iter <= DS_MAX_ALLOCATION_COUNT; iter++) {
         ASSERT_EQ(ds_malloc((void **)&pointer, allocation_len), EDS_OK);
     }
     ASSERT_EQ(ds_malloc((void **)&pointer, allocation_len), EDS_NO_ALLOCATORS);
@@ -76,6 +76,7 @@ TEST(Malloc_Tests, Malloc_No_NULL)
     char *pointer = NULL;
     size_t allocation_len = 5;
 
+    ASSERT_EQ(ds_initialize_allocation(utests_stdout_logger), EDS_OK);
     ASSERT_EQ(ds_malloc((void **)&pointer, allocation_len), EDS_OK);
 
     ASSERT_TRUE(pointer != NULL);
@@ -92,7 +93,7 @@ TEST(Malloc_Tests, Malloc_Lack_Of_Memory)
     ASSERT_EQ(((DS_MAX_ALLOCATION_COUNT * DS_MAX_ALLOCATION_SIZE) >= DS_BUFFER_MEMORY_SIZE), true);
     ASSERT_EQ(ds_initialize_allocation(utests_stdout_logger), EDS_OK);
 
-    while ((allocation_iter * DS_MAX_ALLOCATION_SIZE) < DS_BUFFER_MEMORY_SIZE) {
+    while ((allocation_iter * DS_MAX_ALLOCATION_SIZE) <= DS_BUFFER_MEMORY_SIZE) {
         ASSERT_EQ(ds_malloc((void **)&pointer, allocation_len), EDS_OK);
         allocation_iter++;
     }
@@ -136,16 +137,5 @@ TEST(Malloc_Tests, Malloc_Proper_Allocators)
     GOUT.info() << "Distance in memory of two pointers: " << ((unsigned int) ptr_diff) << " bytes" << std::endl;
 
     ASSERT_EQ(ptr_diff, allocation_len);
-    ds_deinit_allocation();
-}
-
-TEST(Malloc_Tests, Malloc_Minus)
-{
-    char *pointer = NULL;
-    size_t allocation_len = -5;
-
-    ASSERT_EQ(ds_malloc((void **)&pointer, allocation_len), EDS_INVALID_PARAMS);
-    ASSERT_TRUE(pointer != NULL);
-
     ds_deinit_allocation();
 }
