@@ -172,6 +172,7 @@ ds_err_code_t ds_get_max_new_allocation_size(size_t *p_max_new_allocation);
  * @retval EDS_OK Free allocator size is properly read.
  * @retval EDS_NO_INIT Dynostatic-buffer is not initialized.
  * @retval EDS_INVALID_PARAMS Given parameters are invalid.
+ * @retval EDS_CRITICAL_ERR Used more allocators than is enabled.
  */
 ds_err_code_t ds_get_free_allocator_cnt(size_t *p_free_allocators);
 
