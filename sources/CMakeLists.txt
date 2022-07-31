@@ -1,1 +1,0 @@
-add_library(dynostatic_buffer dynostatic-buffer.c)
