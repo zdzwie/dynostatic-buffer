@@ -31,10 +31,10 @@ TEST(Multi_Alloc_Tests, Malloc_Few_Times)
     ASSERT_TRUE((2 * DS_MAX_ALLOCATION_SIZE) <= DS_BUFFER_MEMORY_SIZE);
 
     ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&ds_buffer, (void **)&pointer1, allocation_len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer1), allocation_len), ERROR_DS_OK);
 
     c_usage = (uint8_t) ((((uint16_t )(2ul * allocation_len)) * 100ul) / DS_BUFFER_MEMORY_SIZE);
-    ASSERT_EQ(ds_malloc(&ds_buffer, (void **)&pointer2, allocation_len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer2), allocation_len), ERROR_DS_OK);
 
     ASSERT_EQ(ds_get_memory_usage(&ds_buffer, &r_usage), ERROR_DS_OK);
 
@@ -53,9 +53,9 @@ TEST(Multi_Alloc_Tests, Malloc_Few_Times)
     size_t allocation_len = DS_MAX_ALLOCATION_SIZE;
 
     ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&ds_buffer, (void **)&pointer1, allocation_len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer1), allocation_len), ERROR_DS_OK);
 
-    ASSERT_EQ(ds_malloc(&ds_buffer, (void **)&pointer1, allocation_len), ERROR_DS_PTR_ALLOC_YET);
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer1), allocation_len), ERROR_DS_PTR_ALLOC_YET);
     ds_deinit_allocation(&ds_buffer);
    }
  */
