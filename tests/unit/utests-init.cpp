@@ -8,34 +8,30 @@
  * @date 2022-07-14
  *
  */
-
 #include <gtest/gtest.h>
 
-#include "utests-common.hpp"
-
+extern "C" {
 #include "dynostatic-buffer.h"
-#include "ds-defs.h"
+#include "error.h"
+}
 
 TEST(Initialization_Tests, Twice_Initialize)
 {
-    ASSERT_EQ(ds_initialize_allocation(utests_stdout_logger), EDS_OK);
-    ASSERT_EQ(ds_initialize_allocation(utests_stdout_logger), EDS_ALREADY_INIT);
-
-    ds_deinit_allocation();
+    dynostatic_buffer_t ds_buffer = { 0 };
+    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
+    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_ALREADY_INIT);
+    ds_deinit_allocation(&ds_buffer);
 }
 
 TEST(Initialization_Tests, Deinit)
 {
-    ASSERT_EQ(ds_initialize_allocation(utests_stdout_logger), EDS_OK);
-
-    ds_deinit_allocation();
-    ASSERT_EQ(ds_initialize_allocation(utests_stdout_logger), EDS_OK);
-
-    ds_deinit_allocation();
+    dynostatic_buffer_t ds_buffer = { 0 };
+    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
+    ds_deinit_allocation(&ds_buffer);
+    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
+    ds_deinit_allocation(&ds_buffer);
 }
-
-TEST(Initialization_Tests, Bad_Logger)
+TEST(Initialization_Tests, invalid_args)
 {
-    ASSERT_EQ(ds_initialize_allocation(NULL), EDS_INVALID_PARAMS);
-    ds_deinit_allocation();
+    ASSERT_EQ(ds_initialize_allocation(NULL), ERROR_DS_INVALID_ARG);
 }

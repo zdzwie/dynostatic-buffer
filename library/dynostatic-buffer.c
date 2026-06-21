@@ -1,317 +1,182 @@
 /**
- * @file dynostatic-buffer.c
- * @author Jakub Brzezowski
- * @copyright Copyright (c) 2022
+ * @file    dynostatic-buffer.c
+ * @brief   Implementation of dynamic allocation of memory in static buffer.
  *
- * @brief Implementation of dynamic allocation of memory in static buffer.
- * @version 0.1
- * @date 2022-06-14
- *
+ * @author  Jakub Brzezowski
+ * @date    2022-06-14
  */
 
-#include "dynostatic-buffer.h"
+ #include "dynostatic-buffer.h"
 
-#include <string.h>
-#include <stdio.h>
+ #include <string.h>
+ #include <stdbool.h>
 
-/*<<<<----  Macros and defines ---->>>>*/
+/* *INDENT-OFF* */
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+/* *INDENT-ON* */
 
-#ifdef DS_LOG_ENABLE
-    #define DS_LOG(message) dynostatic_buffer.logger(message, strlen(message))
-#else
-    #define DS_LOG(message) do {} while(0)
-#endif
+ #define DS_GET_USED_ALLOCATOR(ALLOCATOR, SIZE) ALLOCATOR.allocation_status = DS_ALLOCATED; ALLOCATOR.size = SIZE /**< Macro to inserting size for given allocator. */
 
 /**
- * @def DS_GET_USED_ALLOCATOR
- * @brief Get allocator, which was used in recent freed allocation.
+ * @brief Get new allocator for dynostatic-buffer.
  *
- * @param[in,out] ALLOCATOR Used allocator, which can be used again.
- * @param[in] SIZE Size of new allocation.
- */
-#define DS_GET_USED_ALLOCATOR(ALLOCATOR, SIZE) \
-    ALLOCATOR.using = DS_ALLOCATED;            \
-    ALLOCATOR.size = SIZE                      \
-/*<<<<----  Typedefs ---->>>>*/
-
-/**
- * @enum ds_allocator_status
- * @brief Current status of allocator.
- */
-typedef enum {
-    DS_NOT_USED  = 0x00, /**< Current allocator is not used to describe memory block. */
-    DS_FREE      = 0x01, /**< Current block is used to describe free memory block. */
-    DS_ALLOCATED = 0x02  /**< Current block is used to describe allocated memory block. */
-} ds_allocator_status;
-
-/**
- * @struct ds_allocator_t
- * @brief Definitions of allocator used to handle information about memory chunks in ds-buffer.
- */
-typedef PACK(struct {
-    size_t head; /**< Place in memory, where allocation part is started. */
-    size_t size; /**< Size of current allocated memory chunk. */
-
-    ds_allocator_status  using; /**< Current allocator is in use by another parts of code.*/
-} ds_allocator_t);
-
-/**
- * @struct dynostatic_buffer_t
- * @brief Structure describe dynostatic buffer, which is using to emulate dynamic allocation without any allocation in heap.
- */
-static struct {
-    uint8_t memory[DS_BUFFER_MEMORY_SIZE]; /**< Memory declared for buffer. */
-    size_t data_head;                      /**< Head of data allocated in buffer. */
-
-    bool initialized; /**< Dynostatic buffer is initialized. */
-
-    ds_allocator_t allocators[DS_MAX_ALLOCATION_COUNT]; /**< List with structure described possible allocations. */
-    size_t used_allocators;                             /**< Number of currently used allocators. */
-
-    #ifdef DS_LOG_ENABLE
-    logger_func_t logger; /**< Pointer to function using to print some additional debug information. */
-    #endif
-} dynostatic_buffer;
-
-/*<<<<----  Static functions definitions ---->>>>*/
-
-/**
- * @brief Get first free allocator, which can handle demanded memory size.
+ * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
+ * @param[in] size Size of memory chunk which will be allocated.
  *
- * @param[in]  size Size of demanded allocation size.
- *
- * @retval EDS_OK  New allocator is properly get.
- * @retval EDS_INVALID_PARAMS Some of given parameter is invalid.
- * @retval EDS_NO_ALLOCATORS There is no free allocators to assign.
- * @retval EDS_NO_MEMORY Not enough free memory for new allocation.
+ * @retval ERROR_DS_OK Memory is properly allocated in dynostatic-buffer.
+ * @retval ERROR_DS_NO_MEMORY There is not enough free memory to allocate demanded memory chunk.
+ * @retval ERROR_DS_NO_ALLOCATORS There is not enough free allocators to use.
+ * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
  */
-static ds_err_code_t ds_get_new_allocator(size_t size);
+static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size);
 
-/*<<<<----  Static functions implementations ---->>>>*/
-
-static ds_err_code_t ds_get_new_allocator(size_t size)
+static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size)
 {
-    size_t free_allocators = 0;
     size_t iter;
-    if ((p_allocator == NULL) || (size == 0) || size > DS_MAX_ALLOCATION_SIZE) {
-        return EDS_INVALID_PARAMS;
+    if ((size == 0) || size > DS_MAX_ALLOCATION_SIZE) {
+        return ERROR_DS_INVALID_ARG;
     }
 
-    if (dynostatic_buffer.used_allocators == DS_MAX_ALLOCATION_COUNT) {
-        return EDS_NO_ALLOCATORS;
+    if (p_ds_buffer->used_allocators >= DS_MAX_ALLOCATION_COUNT) {
+        return ERROR_DS_NO_ALLOCATORS;
     }
 
     for (iter = 0u; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
-        if (dynostatic_buffer.allocators[iter].using == DS_FREE) {
-            if (dynostatic_buffer.allocators[iter].size >= size) {
-                DS_GET_USED_ALLOCATOR(dynostatic_buffer.allocators[iter], size);
-                return EDS_OK;
+        if (p_ds_buffer->allocators[iter].allocation_status == DS_FREE) {
+            if (p_ds_buffer->allocators[iter].size >= size) {
+                DS_GET_USED_ALLOCATOR(p_ds_buffer->allocators[iter], size);
+                return ERROR_DS_OK;
             }
-        } else if (dynostatic_buffer.allocators[iter].using == DS_NOT_USED) {
+        } else if (p_ds_buffer->allocators[iter].allocation_status == DS_NOT_USED) {
             break;
         }
     }
 
-    if ((DS_BUFFER_MEMORY_SIZE - dynostatic_buffer.data_head) < size) {
-        return EDS_NO_MEMORY;
+    if ((DS_BUFFER_MEMORY_SIZE - p_ds_buffer->data_head) < size) {
+        return ERROR_DS_NO_MEMORY;
     }
 
-    dynostatic_buffer.allocators[iter].using = DS_ALLOCATED;
-    dynostatic_buffer.allocators[iter].size = size;
-    dynostatic_buffer.allocators[iter].head = dynostatic_buffer.data_head;
-    dynostatic_buffer.data_head += size;
+    if (iter == DS_MAX_ALLOCATION_COUNT) {
+        return ERROR_DS_NO_ALLOCATORS;
+    }
 
-    return EDS_OK;
+    p_ds_buffer->allocators[iter].allocation_status = DS_ALLOCATED;
+    p_ds_buffer->allocators[iter].size = size;
+    p_ds_buffer->allocators[iter].head = p_ds_buffer->data_head;
+    p_ds_buffer->data_head += size;
+
+    return ERROR_DS_OK;
 }
 
-/*<<<<----  Public functions ---->>>>*/
-
-ds_err_code_t ds_initialize_allocation(logger_func_t logger)
+ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
 {
-    #ifdef DS_LOG_ENABLE
-    if (logger == NULL) {
-        return EDS_INVALID_PARAMS;
-    }
-    #endif
-
-    dynostatic_buffer.logger = logger;
-
-    if (dynostatic_buffer.initialized) {
-        DS_LOG("Buffer already initialized!\n\r");
-        return EDS_ALREADY_INIT;
+    if (p_ds_buffer == NULL) {
+        return ERROR_DS_INVALID_ARG;
     }
 
-    dynostatic_buffer.initialized = true;
+    if (p_ds_buffer->initialized) {
+        return ERROR_DS_ALREADY_INIT;
+    }
 
-    memset(dynostatic_buffer.memory, 0, DS_BUFFER_MEMORY_SIZE);
-    memset(dynostatic_buffer.allocators, 0, sizeof(dynostatic_buffer.allocators));
+    p_ds_buffer->initialized = true;
 
-    DS_LOG("Initialized\n\r");
-    return EDS_OK;
+    memset(p_ds_buffer->memory, 0, DS_BUFFER_MEMORY_SIZE);
+    memset(p_ds_buffer->allocators, 0, sizeof(p_ds_buffer->allocators));
+
+    return ERROR_DS_OK;
 }
 
-ds_err_code_t ds_malloc(void **p_memory, size_t size)
+ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size)
 {
-    ds_err_code_t ret;
-    if (!dynostatic_buffer.initialized) {
-        return EDS_NO_INIT;
+    if (!p_ds_buffer->initialized) {
+        return ERROR_DS_NO_INIT;
     }
 
     if ((p_memory == NULL) || (size == 0)) {
-        return EDS_INVALID_PARAMS;
+        return ERROR_DS_INVALID_ARG;
     }
 
     if (size > DS_MAX_ALLOCATION_SIZE) {
-        return EDS_TOO_BIG_CHUNK;
+        return ERROR_DS_TOO_BIG_CHUNK;
     }
 
-    ret = ds_get_new_allocator(size);
-    if (ret != EDS_OK) {
+    ds_err_code_t ret;
+    ret = ds_get_new_allocator(p_ds_buffer, size);
+    if (ret != ERROR_DS_OK) {
         return ret;
     }
 
-    *p_memory = (dynostatic_buffer.memory + dynostatic_buffer.data_head);
-    return EDS_OK;
+    *p_memory = (p_ds_buffer->memory + p_ds_buffer->data_head);
+    return ERROR_DS_OK;
 }
 
-ds_err_code_t ds_free(void **p_memory)
+ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
 {
-    if (!dynostatic_buffer.initialized) {
-        return EDS_NO_INIT;
+    if (!p_ds_buffer->initialized) {
+        return ERROR_DS_NO_INIT;
     }
 
     if ((p_memory == NULL) || (*p_memory == NULL)) {
-        return EDS_INVALID_PARAMS;
+        return ERROR_DS_INVALID_ARG;
     }
 
-    if (((uint8_t *)*p_memory < dynostatic_buffer.memory)
-        && ((uint8_t *) *p_memory > ((dynostatic_buffer.memory + DS_BUFFER_MEMORY_SIZE)))) {
-        DS_LOG("Given pointer is not allocated in DS buffer.\n\r");
-        return EDS_MEMORY_OUT_OF_DS;
+    if (((uint8_t *)*p_memory < p_ds_buffer->memory)
+        && ((uint8_t *) *p_memory > ((p_ds_buffer->memory + DS_BUFFER_MEMORY_SIZE)))) {
+        return ERROR_DS_MEMORY_OUT_OF_DS;
     }
+
+    /* TODO: End implementation. */
+
+    p_ds_buffer->used_allocators--;
 
     *p_memory = NULL;
-    return EDS_OK;
+    return ERROR_DS_OK;
 }
 
-ds_err_code_t ds_calloc(void **p_memory, size_t len, size_t size_of_elem)
-{
-    ds_err_code_t ret;
-
-    if (!dynostatic_buffer.initialized) {
-        return EDS_NO_INIT;
-    }
-
-    if ((p_memory == NULL) || (*p_memory == NULL) || (len == 0) || (size_of_elem == 0)) {
-        return EDS_INVALID_PARAMS;
-    }
-
-    ret = ds_malloc(p_memory, (len * size_of_elem));
-    DS_VAL_ERR_AND_RET(ret);
-
-    memset(p_memory, 0, (len * size_of_elem));
-    return EDS_OK;
-}
-
-ds_err_code_t ds_realloc(void **p_memory, size_t size)
-{
-    if (!dynostatic_buffer.initialized) {
-        return EDS_NO_INIT;
-    }
-
-    if ((p_memory == NULL) || (*p_memory == NULL) || (size == 0)) {
-        return EDS_INVALID_PARAMS;
-    }
-
-    return EDS_OK;
-}
-
-ds_err_code_t ds_get_memory_usage(uint8_t *p_memory_usage)
+ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_memory_usage)
 {
     size_t usage = 0;
     if (p_memory_usage == NULL) {
-        return EDS_INVALID_PARAMS;
+        return ERROR_DS_INVALID_ARG;
     }
 
-    if (!dynostatic_buffer.initialized) {
-        return EDS_NO_INIT;
+    if (!p_ds_buffer->initialized) {
+        return ERROR_DS_NO_INIT;
     }
 
     for (uint8_t iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
-        if (dynostatic_buffer.allocators[iter].using == DS_ALLOCATED) {
-            usage += dynostatic_buffer.allocators[iter].size;
+        if (p_ds_buffer->allocators[iter].allocation_status == DS_ALLOCATED) {
+            usage += p_ds_buffer->allocators[iter].size;
         }
     }
 
     if (usage > DS_BUFFER_MEMORY_SIZE) {
         *p_memory_usage = 0;
-        return EDS_CRITICAL_ERR;
+        return ERROR_DS_CRITICAL_ERR;
     }
 
     *p_memory_usage = (uint8_t) ((100 * usage) / DS_BUFFER_MEMORY_SIZE);
-    return EDS_OK;
+    return ERROR_DS_OK;
 }
 
-ds_err_code_t ds_get_max_new_allocation_size(size_t *p_max_new_allocation)
+ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer)
 {
-    if (p_max_new_allocation == NULL) {
-        return EDS_INVALID_PARAMS;
+    if (!p_ds_buffer->initialized) {
+        return ERROR_DS_NO_INIT;
     }
 
-    if (!dynostatic_buffer.initialized) {
-        return EDS_NO_INIT;
-    }
-
-    *p_max_new_allocation = 0;
-
-    for (uint8_t iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
-        if (dynostatic_buffer.allocators[iter].using == DS_FREE) {
-            if (dynostatic_buffer.allocators[iter].size > *p_max_new_allocation) {
-                *p_max_new_allocation = dynostatic_buffer.allocators[iter].size;
-            }
-        }
-    }
-
-    if ((DS_BUFFER_MEMORY_SIZE - dynostatic_buffer.data_head) > *p_max_new_allocation) {
-        *p_max_new_allocation = (DS_BUFFER_MEMORY_SIZE - dynostatic_buffer.data_head);
-    }
-
-    if (*p_max_new_allocation > DS_MAX_ALLOCATION_SIZE ) {
-        *p_max_new_allocation = DS_MAX_ALLOCATION_SIZE;
-    }
-
-    return EDS_OK;
+    p_ds_buffer->initialized = false;
+    bzero(p_ds_buffer->memory, DS_BUFFER_MEMORY_SIZE);
+    bzero(p_ds_buffer->allocators, sizeof(p_ds_buffer->allocators));
+    p_ds_buffer->data_head = 0;
+    p_ds_buffer->used_allocators = 0;
+    return ERROR_DS_OK;
 }
 
-ds_err_code_t ds_get_free_allocator_cnt(size_t *p_free_allocators)
-{
-    if (p_free_allocators == NULL) {
-        return EDS_INVALID_PARAMS;
-    }
-
-    if (!dynostatic_buffer.initialized) {
-        return EDS_NO_INIT;
-    }
-
-    *p_free_allocators = 0;
-    for (uint8_t iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
-        if (dynostatic_buffer.allocators[iter].using == DS_NOT_USED) {
-            *p_free_allocators++;
-        }
-    }
-
-    if (*p_free_allocators >= DS_MAX_ALLOCATION_COUNT) {
-        return EDS_CRITICAL_ERR;
-    }
-
-    return EDS_OK;
-}
-
-#ifdef TEST_LIBRARY
-void ds_deinit_allocation(void)
-{
-    dynostatic_buffer.initialized = false;
-    memset(dynostatic_buffer.allocators, 0, sizeof (dynostatic_buffer.allocators));
-    dynostatic_buffer.used_allocators = 0;
-}
-#endif
+/* *INDENT-OFF* */
+ #ifdef __cplusplus
+ }
+ #endif
+/* *INDENT-ON* */
