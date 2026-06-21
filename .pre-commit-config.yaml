@@ -1,0 +1,34 @@
+exclude: '^(tests/googletest/|cmake-build-.*/|build/)'
+
+repos:
+  # Generic, language-agnostic file hygiene checks.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: check-json
+      - id: check-yaml
+
+  # Project-specific static analysis and formatting.
+  - repo: local
+    hooks:
+      - id: cppcheck
+        name: cppcheck static analysis
+        language: system
+        entry: cppcheck --quiet --error-exitcode=1
+          --enable=warning,style,performance,portability
+          --inline-suppr -I library
+        files: '\.(c|h|cpp|hpp)$'
+        pass_filenames: true
+
+      - id: uncrustify
+        name: uncrustify code style check
+        language: system
+        entry: python3 scripts/uncrustify/check_code.py
+        files: '\.(c|h|cpp|hpp)$'
+        pass_filenames: false
