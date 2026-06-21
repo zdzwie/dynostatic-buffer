@@ -104,7 +104,7 @@ static ds_err_code_t ds_get_new_allocator(size_t size)
     for (iter = 0u; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
         if (dynostatic_buffer.allocators[iter].using == DS_FREE) {
             if (dynostatic_buffer.allocators[iter].size >= size) {
-                DS_GET_USED_ALLOCATOR(dynostatic_buffer.allocators[iter],size);
+                DS_GET_USED_ALLOCATOR(dynostatic_buffer.allocators[iter], size);
                 return EDS_OK;
             }
         } else if (dynostatic_buffer.allocators[iter].using == DS_NOT_USED) {
@@ -120,7 +120,6 @@ static ds_err_code_t ds_get_new_allocator(size_t size)
     dynostatic_buffer.allocators[iter].size = size;
     dynostatic_buffer.allocators[iter].head = dynostatic_buffer.data_head;
     dynostatic_buffer.data_head += size;
-
 
     return EDS_OK;
 }
@@ -168,7 +167,7 @@ ds_err_code_t ds_malloc(void **p_memory, size_t size)
 
     ret = ds_get_new_allocator(size);
     if (ret != EDS_OK) {
-        return  ret;
+        return ret;
     }
 
     *p_memory = (dynostatic_buffer.memory + dynostatic_buffer.data_head);
