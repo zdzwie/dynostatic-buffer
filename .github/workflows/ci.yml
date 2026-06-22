@@ -63,7 +63,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y lcov
 
       - name: Generate coverage report
-        run: scripts/coverage/run_coverage.sh
+        run: scripts/lcov/run_coverage.sh
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
