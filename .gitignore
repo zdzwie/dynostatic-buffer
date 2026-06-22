@@ -1,6 +1,9 @@
 #Build files
 build/
 
+#Coverage reports
+coverage/
+
 #VSC connected files
 .vscode/
 
