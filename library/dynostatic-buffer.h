@@ -75,7 +75,7 @@ typedef enum {
  * @typedef ds_allocator_t
  * @brief Definitions of allocator used to handle information about memory chunks in ds-buffer.
  */
-typedef struct __attribute__((packed)) {
+typedef struct {
     size_t head;  /**< Place in memory, where allocation part is started. */
     size_t size;  /**< Size of current allocated memory chunk. */
 
@@ -86,7 +86,7 @@ typedef struct __attribute__((packed)) {
  * @typedef dynostatic_buffer_t
  * @brief Structure describe dynostatic buffer, which is using to emulate dynamic allocation without any allocation in heap.
  */
-typedef struct __attribute__((packed)) {
+typedef struct {
     uint8_t memory[DS_BUFFER_MEMORY_SIZE];  /**< Memory declared for buffer. */
     size_t data_head;                       /**< Head of data allocated in buffer. */
 

@@ -1,8 +1,5 @@
-cmake_minimum_required(VERSION 3.14)
-project(my_project)
-
-# GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -11,12 +8,9 @@ FetchContent_Declare(
   GIT_TAG release-1.12.1
 )
 
-
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
-
-enable_testing()
 
 add_executable( ds_tests
                 utests-common.cpp
@@ -24,19 +18,16 @@ add_executable( ds_tests
                 utests-malloc.cpp
                 utests-free.cpp
                 utests-multi-alloc.cpp
-                ../../library/dynostatic-buffer.c
 )
 
-target_include_directories(ds_tests PUBLIC
-      "${PROJECT_SOURCE_DIR}/../../library"
-      "${PROJECT_SOURCE_DIR}/../utils"
-    )
-add_definitions(-DTEST_LIBRARY)
-
-target_link_libraries(
-  ds_tests
+target_link_libraries(ds_tests PRIVATE
+  dynostatic_buffer
   GTest::gtest_main
 )
+
+target_include_directories(ds_tests PRIVATE
+      "${CMAKE_CURRENT_SOURCE_DIR}/../utils"
+    )
 
 include(GoogleTest)
 gtest_discover_tests(ds_tests)

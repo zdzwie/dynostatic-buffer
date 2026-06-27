@@ -39,8 +39,10 @@ fi
 mkdir -p "$OUT_DIR"
 
 echo "==> Configuring unit tests with coverage flags"
-cmake -S tests/unit -B "$BUILD_DIR" \
+cmake -S . -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Debug \
+    -DDS_BUILD_TESTS=ON \
+    -DBUILD_DOC=OFF \
     -DCMAKE_C_FLAGS="--coverage -O0 -g" \
     -DCMAKE_CXX_FLAGS="--coverage -O0 -g" \
     -DCMAKE_EXE_LINKER_FLAGS="--coverage"
