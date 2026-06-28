@@ -38,12 +38,24 @@
         "CMAKE_CXX_FLAGS": "--coverage -O0 -g",
         "CMAKE_EXE_LINKER_FLAGS": "--coverage"
       }
+    },
+    {
+      "name": "docs",
+      "displayName": "Sphinx (Read the Docs) documentation build",
+      "binaryDir": "${sourceDir}/build/docs",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DS_BUILD_TESTS": "OFF",
+        "BUILD_DOC": "OFF",
+        "BUILD_SPHINX": "ON"
+      }
     }
   ],
   "buildPresets": [
     { "name": "dev", "configurePreset": "dev" },
     { "name": "release", "configurePreset": "release" },
-    { "name": "coverage", "configurePreset": "coverage" }
+    { "name": "coverage", "configurePreset": "coverage" },
+    { "name": "docs", "configurePreset": "docs" }
   ],
   "testPresets": [
     {

@@ -1,6 +1,10 @@
 #Build files
 build/
 
+#Generated documentation artifacts
+docs/_build/
+docs/_doxygen/
+
 #Coverage reports
 coverage/
 

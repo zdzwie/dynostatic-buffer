@@ -1,0 +1,5 @@
+# Python dependencies for building the Sphinx documentation.
+# Doxygen (a system package) is also required; see docs/README or .readthedocs.yaml.
+sphinx>=7.0
+sphinx-rtd-theme>=2.0
+breathe>=4.35
