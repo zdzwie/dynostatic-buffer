@@ -10,14 +10,33 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <assert.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define DS_GET_USED_ALLOCATOR(ALLOCATOR, SIZE)  \
-    ALLOCATOR.allocation_status = DS_ALLOCATED; \
-    ALLOCATOR.size = SIZE /**< Macro to inserting size for given allocator. */
+#define DS_GET_USED_ALLOCATOR(ALLOCATOR, SIZE)    \
+    (ALLOCATOR).allocation_status = DS_ALLOCATED; \
+    (ALLOCATOR).size = SIZE /**< Macro to inserting size for given allocator. */
+
+#ifndef DS_ASSERT
+    /**
+ * @brief Wrapper for assertion
+ * @param[in] cond Condition to check.
+ */
+    #define DS_ASSERT(cond) assert(cond)
+#endif
+
+/**
+ * @brief Perform secure memset with zeros of memory.
+ *
+ * @param[in, out] p_dest Pointer to memory, which will be filled with given value.
+ * @param[in] dest_size Size of memory, which should be set.
+ * @param[in] size_to_zero Size of memory, which should be filled with zeros.
+ */
+static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero);
 
 /**
  * @brief Get new allocator for dynostatic-buffer.
@@ -31,6 +50,16 @@ extern "C" {
  * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
  */
 static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size);
+
+static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero)
+{
+    DS_ASSERT(p_dest != NULL);
+    DS_ASSERT(size_to_zero <= dest_size); /* the destination-size_to_zero guard memset_s adds */
+
+    memset(p_dest, 0, size_to_zero); /* NOLINT(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) */
+
+    (void)dest_size;
+}
 
 static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size)
 {
@@ -70,6 +99,7 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
     return ERROR_DS_OK;
 }
 
+
 ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
 {
     if (p_ds_buffer == NULL) {
@@ -82,8 +112,8 @@ ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
 
     p_ds_buffer->initialized = true;
 
-    memset(p_ds_buffer->memory, 0, DS_BUFFER_MEMORY_SIZE);
-    memset(p_ds_buffer->allocators, 0, sizeof(p_ds_buffer->allocators));
+    ds_zero(p_ds_buffer->memory, DS_BUFFER_MEMORY_SIZE, DS_BUFFER_MEMORY_SIZE);
+    ds_zero(p_ds_buffer->allocators, sizeof(p_ds_buffer->allocators), sizeof(p_ds_buffer->allocators));
 
     return ERROR_DS_OK;
 }
@@ -155,7 +185,7 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
         return ret;
     }
 
-    memset(*p_memory, 0, total_size);
+    ds_zero(*p_memory, DS_BUFFER_MEMORY_SIZE, total_size);
     return ERROR_DS_OK;
 }
 
@@ -214,8 +244,8 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer)
     }
 
     p_ds_buffer->initialized = false;
-    bzero(p_ds_buffer->memory, DS_BUFFER_MEMORY_SIZE);
-    bzero(p_ds_buffer->allocators, sizeof(p_ds_buffer->allocators));
+    ds_zero(p_ds_buffer->memory, DS_BUFFER_MEMORY_SIZE, DS_BUFFER_MEMORY_SIZE);
+    ds_zero(p_ds_buffer->allocators, sizeof(p_ds_buffer->allocators), sizeof(p_ds_buffer->allocators));
     p_ds_buffer->data_head = 0;
     p_ds_buffer->used_allocators = 0;
     return ERROR_DS_OK;

@@ -1,0 +1,31 @@
+---
+# clang-tidy configuration for the dynostatic-buffer project.
+#
+# Like the sibling `clang-format` file, this is intentionally NOT named
+# `.clang-tidy`: the leading dot is omitted so it is not auto-discovered and
+# must be passed explicitly via `--config-file=clang-tidy`.
+#
+# Enabled check groups (everything else is turned off by the leading "-*"):
+#   bugprone-*        likely bugs and error-prone constructs
+#   cert-*            CERT C/C++ secure-coding guidelines
+#   clang-analyzer-*  the Clang Static Analyzer checks
+#   performance-*     avoidable run-time overhead
+#   portability-*     non-portable constructs
+#   misc-*            assorted lints that fit no other group
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  performance-*,
+  portability-*,
+  misc-*
+
+# Treat every enabled diagnostic as an error so the pre-commit hook and the CI
+# job fail (non-zero exit) when a check fires, instead of merely printing it.
+WarningsAsErrors: '*'
+
+# Also analyse the project's own headers (e.g. dynostatic-buffer.h) when they
+# are pulled in by a translation unit, while staying out of build/third-party
+# headers.
+HeaderFilterRegex: '(library|examples)/'

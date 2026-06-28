@@ -46,3 +46,14 @@ repos:
           --inline-suppr -I library
         files: '\.(c|h|cpp|hpp)$'
         pass_filenames: true
+
+      # clang-tidy with the bugprone/cert/clang-analyzer/performance/
+      # portability/misc check groups (configured in the repo-root `clang-tidy`
+      # file). The wrapper generates a compilation database on demand via the
+      # `tidy` CMake preset, so no manual build step is required.
+      - id: clang-tidy
+        name: clang-tidy static analysis
+        language: system
+        entry: scripts/clang-tidy/run-clang-tidy.sh
+        files: '^(library|examples)/.*\.(c|cpp|cc|cxx)$'
+        pass_filenames: true

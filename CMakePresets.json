@@ -40,6 +40,17 @@
       }
     },
     {
+      "name": "tidy",
+      "displayName": "clang-tidy compilation database (library + example only)",
+      "binaryDir": "${sourceDir}/build/tidy",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DS_BUILD_TESTS": "OFF",
+        "BUILD_DOC": "OFF",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
       "name": "docs",
       "displayName": "Sphinx (Read the Docs) documentation build",
       "binaryDir": "${sourceDir}/build/docs",
