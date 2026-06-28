@@ -9,12 +9,12 @@
  *
  */
 
- #include <gtest/gtest.h>
- #include "logger.hpp"
+#include <gtest/gtest.h>
+#include "logger.hpp"
 
 extern "C" {
-     #include "dynostatic-buffer.h"
-     #include "error.h"
+#include "dynostatic-buffer.h"
+#include "error.h"
 }
 
 #include <cmath>
@@ -117,14 +117,14 @@ TEST(Malloc_Tests, Malloc_Proper_Size)
     char *pointer = NULL;
     size_t allocation_len = DS_MAX_ALLOCATION_SIZE;
     uint8_t r_memory_usage = 0;
-    uint8_t c_memory_usage = (uint8_t) (DS_MAX_ALLOCATION_SIZE * 100ul / DS_BUFFER_MEMORY_SIZE);
+    uint8_t c_memory_usage = (uint8_t)(DS_MAX_ALLOCATION_SIZE * 100ul / DS_BUFFER_MEMORY_SIZE);
 
     ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
     ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), allocation_len), ERROR_DS_OK);
 
     ASSERT_EQ(ds_get_memory_usage(&ds_buffer, &r_memory_usage), ERROR_DS_OK);
 
-    Logger::info("Calculated usage: ", ((unsigned int) c_memory_usage), " Read memory usage: ", ((unsigned int) r_memory_usage));
+    Logger::info("Calculated usage: ", ((unsigned int)c_memory_usage), " Read memory usage: ", ((unsigned int)r_memory_usage));
 
     ASSERT_TRUE(abs(r_memory_usage - c_memory_usage) < max_memory_usage_deviation);
     ds_deinit_allocation(&ds_buffer);
@@ -143,7 +143,7 @@ TEST(Malloc_Tests, Malloc_Proper_Allocators)
     ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&first_pointer), allocation_len), ERROR_DS_OK);
     ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&second_pointer), allocation_len), ERROR_DS_OK);
 
-    ptr_diff = (size_t) (second_pointer - first_pointer);
+    ptr_diff = (size_t)(second_pointer - first_pointer);
 
     Logger::info("Distance in memory of two pointers: ", (unsigned int)ptr_diff, " bytes");
 

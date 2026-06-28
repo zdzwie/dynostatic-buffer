@@ -6,18 +6,18 @@
  * @date    2022-06-14
  */
 
- #include "dynostatic-buffer.h"
+#include "dynostatic-buffer.h"
 
- #include <string.h>
- #include <stdbool.h>
+#include <string.h>
+#include <stdbool.h>
 
-/* *INDENT-OFF* */
- #ifdef __cplusplus
- extern "C" {
- #endif
-/* *INDENT-ON* */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
- #define DS_GET_USED_ALLOCATOR(ALLOCATOR, SIZE) ALLOCATOR.allocation_status = DS_ALLOCATED; ALLOCATOR.size = SIZE /**< Macro to inserting size for given allocator. */
+#define DS_GET_USED_ALLOCATOR(ALLOCATOR, SIZE)  \
+    ALLOCATOR.allocation_status = DS_ALLOCATED; \
+    ALLOCATOR.size = SIZE /**< Macro to inserting size for given allocator. */
 
 /**
  * @brief Get new allocator for dynostatic-buffer.
@@ -123,7 +123,7 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
     }
 
     if (((uint8_t *)*p_memory < p_ds_buffer->memory)
-        && ((uint8_t *) *p_memory > ((p_ds_buffer->memory + DS_BUFFER_MEMORY_SIZE)))) {
+        && ((uint8_t *)*p_memory > ((p_ds_buffer->memory + DS_BUFFER_MEMORY_SIZE)))) {
         return ERROR_DS_MEMORY_OUT_OF_DS;
     }
 
@@ -203,7 +203,7 @@ ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_m
         return ERROR_DS_CRITICAL_ERR;
     }
 
-    *p_memory_usage = (uint8_t) ((100 * usage) / DS_BUFFER_MEMORY_SIZE);
+    *p_memory_usage = (uint8_t)((100 * usage) / DS_BUFFER_MEMORY_SIZE);
     return ERROR_DS_OK;
 }
 
@@ -221,8 +221,6 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer)
     return ERROR_DS_OK;
 }
 
-/* *INDENT-OFF* */
- #ifdef __cplusplus
- }
- #endif
-/* *INDENT-ON* */
+#ifdef __cplusplus
+}
+#endif

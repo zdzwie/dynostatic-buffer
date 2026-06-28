@@ -22,7 +22,7 @@ extern "C" {
 
 /* Fallback if the implementation does not yet expose its alignment. */
 #ifndef DS_ALIGNMENT
-#define DS_ALIGNMENT (alignof(max_align_t))
+    #define DS_ALIGNMENT (alignof(max_align_t))
 #endif
 
 namespace {

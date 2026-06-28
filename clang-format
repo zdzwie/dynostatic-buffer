@@ -1,0 +1,89 @@
+---
+Language: Cpp
+Standard: c++17
+
+# ---- Indentation -------------------------------------------------------
+# input_tab_size / indent_columns = 4 ; indent_with_tabs = 0
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+IndentCaseLabels: true          # indent_switch_case = indent_columns
+IndentPPDirectives: BeforeHash  # your nested "#ifndef ... #define" indents before the hash
+IndentExternBlock: NoIndent     # indent_extern = false
+
+ColumnLimit: 0
+
+# ---- Braces ------------------------------------------------------------
+# nl_fdef_brace = add (function brace on its own line);
+# nl_{if,for,while,do,switch,else,enum,struct,union}_brace = remove (attached)
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterClass: false
+  AfterNamespace: false
+  AfterExternBlock: false
+  BeforeElse: false
+  BeforeWhile: false
+  BeforeCatch: false
+  AfterCaseLabel: false
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+
+# mod_full_brace_{if,for,do,function} = force -> add missing braces.
+# Code-modifying option, needs clang-format >= 15. Drop if you stay older.
+InsertBraces: true
+
+# nl_create_*_one_liner = false ; nl_*_leave_one_liners = false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+
+# ---- Pointers / references ---------------------------------------------
+# sp_before_ptr_star = force, sp_after_ptr_star = remove -> "char *p"
+DerivePointerAlignment: false
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+# ---- Operator wrapping position ----------------------------------------
+# pos_arith / pos_bool / pos_compare = lead -> operator starts the wrapped line
+BreakBeforeBinaryOperators: All
+BreakBeforeTernaryOperators: true   # pos_conditional = lead
+AlignOperands: AlignAfterOperator
+AlignAfterOpenBracket: Align
+
+# ---- Spacing -----------------------------------------------------------
+SpaceBeforeParens: ControlStatements  # sp_before_sparen=force + sp_func_*_paren=remove
+SpaceBeforeAssignmentOperators: true  # sp_*_assign = add
+SpacesInParens: Never                 # sp_inside_paren / sp_inside_fparen = remove  (>=17)
+SpacesInSquareBrackets: false         # sp_inside_square = remove
+SpaceBeforeSquareBrackets: false      # sp_before_square = remove
+SpaceAfterCStyleCast: false
+SpaceInEmptyBlock: false              # sp_inside_braces_empty = remove
+Cpp11BracedListStyle: false           # sp_inside_braces = add -> "{ 0 }" keeps inner spaces
+
+# ---- Alignment ---------------------------------------------------------
+# Keeps the aligned ERROR_DS_* #define column readable.
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+AlignConsecutiveAssignments: false
+AlignTrailingComments: true           # keeps your struct /**< ... */ column
+AlignEscapedNewlines: Left            # align_nl_cont = true (backslashes in macros)
+
+# ---- Blank lines / includes / comments / EOF ---------------------------
+MaxEmptyLinesToKeep: 2                 # nl_max = 2
+KeepEmptyLinesAtTheStartOfBlocks: false  # eat_blanks_after_open_brace = true
+SortIncludes: Never                    # mod_sort_include = false; protects the extern "C" block order
+ReflowComments: false                  # cmt_width = 0 -> don't reflow your Doxygen blocks
+InsertNewlineAtEOF: true               # nl_end_of_file = add  (>=16)
+...

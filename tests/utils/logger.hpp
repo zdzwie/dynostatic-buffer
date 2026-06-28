@@ -9,7 +9,7 @@
  *
  */
 
- #pragma once
+#pragma once
 
 #include <iostream>
 #include <sstream>
@@ -19,14 +19,15 @@
  * @brief Additional logger for testing framework.
  */
 class Logger {
-private:
+  private:
     static constexpr const char *RESET = "\033[0m";
     static constexpr const char *RED = "\033[31m";
     static constexpr const char *GREEN = "\033[32m";
     static constexpr const char *YELLOW = "\033[33m";
     static constexpr const char *BLUE = "\033[34m";
     static constexpr const char *MAGENTA = "\033[35m";
-public:
+
+  public:
     /**
      * @brief Construct a new LOGOUT object.
      */
@@ -42,7 +43,7 @@ public:
      *
      * @return std::string String representation of argument.
      */
-    template<typename T>
+    template <typename T>
     static std::string to_stirng(const T &value)
     {
         std::ostringstream oss;
@@ -60,12 +61,12 @@ public:
      *
      * @return std::string Formatted message.
      */
-    template<typename First, typename ... Args>
-    static std::string format(const First &first, const Args &... args)
+    template <typename First, typename... Args>
+    static std::string format(const First &first, const Args &...args)
     {
         std::ostringstream oss;
         oss << first;
-        return oss.str() + " " + format(args ...);
+        return oss.str() + " " + format(args...);
     }
 
     /**
@@ -84,10 +85,10 @@ public:
      * @tparam Args Type of arguments.
      * @param[in] args Arguments.
      */
-    template<typename ... Args>
+    template <typename... Args>
     static void info(Args... args)
     {
-        std::cout << GREEN << "[INFO] " << format(args ...) <<  RESET << std::endl;
+        std::cout << GREEN << "[INFO] " << format(args...) << RESET << std::endl;
     }
 
     /**
@@ -96,10 +97,10 @@ public:
      * @tparam Args Type of arguments.
      * @param[in] args Arguments.
      */
-    template<typename ... Args>
+    template <typename... Args>
     static void warn(Args... args)
     {
-        std::cout << YELLOW << "[WARN] " << format(args ...) <<  RESET << std::endl;
+        std::cout << YELLOW << "[WARN] " << format(args...) << RESET << std::endl;
     }
 
     /**
@@ -108,10 +109,10 @@ public:
      * @tparam Args Type of arguments.
      * @param[in] args Arguments.
      */
-    template<typename ... Args>
+    template <typename... Args>
     static void error(Args... args)
     {
-        std::cout << RED << "[ERR] " << format(args ...) <<  RESET << std::endl;
+        std::cout << RED << "[ERR] " << format(args...) << RESET << std::endl;
     }
 
     /**
@@ -120,10 +121,10 @@ public:
      * @tparam Args Type of arguments.
      * @param[in] args Arguments.
      */
-    template<typename ... Args>
+    template <typename... Args>
     static void debug(Args... args)
     {
-        std::cout << BLUE << "[DEBUG] " << format(args ...) <<  RESET << std::endl;
+        std::cout << BLUE << "[DEBUG] " << format(args...) << RESET << std::endl;
     }
 
     /**
@@ -133,17 +134,17 @@ public:
      * @tparam Args Type of arguments.
      * @param[in] args Arguments.
      */
-    template<typename ... Args>
+    template <typename... Args>
     static void fail(Args... args)
     {
-        std::cout << MAGENTA << "[FAIL] " << format(args ...) <<  RESET << std::endl;
+        std::cout << MAGENTA << "[FAIL] " << format(args...) << RESET << std::endl;
         exit(EXIT_FAILURE); // Terminate the program with error status
     }
 
     /**
      * @brief Print warning message using standard output.
      */
-    static std::ostream&  warn()
+    static std::ostream &warn()
     {
         std::cout << "[WARN] ";
         return std::cout;
@@ -152,7 +153,7 @@ public:
     /**
      * @brief Print error message using standard output.
      */
-    static std::ostream&  err()
+    static std::ostream &err()
     {
         std::cout << "[ERR] ";
         return std::cout;

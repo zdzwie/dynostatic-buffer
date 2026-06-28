@@ -12,8 +12,8 @@
 #include "logger.hpp"
 
 extern "C" {
-    #include "dynostatic-buffer.h"
-    #include "error.h"
+#include "dynostatic-buffer.h"
+#include "error.h"
 }
 
 TEST(Free_Tests, Free_Uninitialized)

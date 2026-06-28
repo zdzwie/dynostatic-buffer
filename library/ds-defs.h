@@ -17,20 +17,20 @@
 extern "C" {
 #endif
 
-#ifndef DS_BUFFER_MEMORY_SIZE /**< If You not use CMake. */
+#ifndef DS_BUFFER_MEMORY_SIZE          /**< If You not use CMake. */
     #define DS_BUFFER_MEMORY_SIZE 1024 /**< Size of buffer prepared for dynostatic-buffer. */
 #endif
 
-#ifndef DS_LOG_ENABLE /**< If You not use CMake. */
-    #define DS_LOG_ENABLE false         /**< Enable or disable logging from dynostatic-buffer. */
+#ifndef DS_LOG_ENABLE           /**< If You not use CMake. */
+    #define DS_LOG_ENABLE false /**< Enable or disable logging from dynostatic-buffer. */
 #endif
 
-#ifndef DS_MAX_ALLOCATION_COUNT /**< If You not use CMake. */
-    #define DS_MAX_ALLOCATION_COUNT 10  /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
+#ifndef DS_MAX_ALLOCATION_COUNT        /**< If You not use CMake. */
+    #define DS_MAX_ALLOCATION_COUNT 10 /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
 #endif
 
-#ifndef DS_MAX_ALLOCATION_SIZE /**< If You not use CMake. */
-    #define DS_MAX_ALLOCATION_SIZE 256  /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
+#ifndef DS_MAX_ALLOCATION_SIZE         /**< If You not use CMake. */
+    #define DS_MAX_ALLOCATION_SIZE 256 /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
 #endif
 
 #if (DS_BUFFER_MEMORY_SIZE == 0) || (DS_MAX_ALLOCATION_COUNT == 0) || (DS_MAX_ALLOCATION_SIZE == 0)

@@ -14,7 +14,19 @@ repos:
       - id: check-json
       - id: check-yaml
 
-  # Project-specific static analysis and formatting.
+  # Code formatting with clang-format 18 (pinned via the mirror rev below).
+  # The hook ships its own clang-format binary, so no system install is needed.
+  # -style=file forces use of the repo-root .clang-format; -fallback-style=none
+  # ensures clang-format NEVER falls back to a built-in style if that file is
+  # missing (it skips instead), so formatting only ever follows .clang-format.
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v18.1.8
+    hooks:
+      - id: clang-format
+        types_or: [c, c++]
+        args: [-style=file, --fallback-style=none]
+
+  # Project-specific static analysis.
   - repo: local
     hooks:
       - id: cppcheck
@@ -25,10 +37,3 @@ repos:
           --inline-suppr -I library
         files: '\.(c|h|cpp|hpp)$'
         pass_filenames: true
-
-      - id: uncrustify
-        name: uncrustify code style check
-        language: system
-        entry: python3 scripts/uncrustify/check_code.py
-        files: '\.(c|h|cpp|hpp)$'
-        pass_filenames: false
