@@ -82,3 +82,84 @@ TEST(Free_Tests, Free_Twice)
     ds_deinit_allocation();
    }
  */
+
+/* TODO: Fix/implement in DS-Buffer and uncomment
+   TEST(Free_Tests, Free_Releases_Memory)
+   {
+    dynostatic_buffer_t ds_buffer = { 0 };
+    char *p = NULL;
+    uint8_t usage = 0xFF;
+
+    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&p), DS_MAX_ALLOCATION_SIZE), ERROR_DS_OK);
+    ASSERT_EQ(ds_free(&ds_buffer, reinterpret_cast<void **>(&p)), ERROR_DS_OK);
+
+    ASSERT_EQ(ds_get_memory_usage(&ds_buffer, &usage), ERROR_DS_OK);
+    ASSERT_EQ(usage, 0); // no live ALLOCATED descriptors -> 0%
+
+    ds_deinit_allocation(&ds_buffer);
+   }
+ */
+
+/* TODO: Fix/implement in DS-Buffer and uncomment
+   TEST(Free_Tests, Freed_Slot_Is_Reused)
+   {
+    dynostatic_buffer_t ds_buffer = { 0 };
+    char *p1 = NULL;
+    char *p2 = NULL;
+
+    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&p1), 50), ERROR_DS_OK);
+
+    char *freed_addr = p1;
+    ASSERT_EQ(ds_free(&ds_buffer, reinterpret_cast<void **>(&p1)), ERROR_DS_OK);
+
+    // New, smaller request must reuse the just-freed block (same address).
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&p2), 40), ERROR_DS_OK);
+    ASSERT_EQ(p2, freed_addr);
+
+    ds_deinit_allocation(&ds_buffer);
+   }
+ */
+
+/* TODO: Fix/implement in DS-Buffer and uncomment
+   TEST(Free_Tests, Last_Block_Reclaims_Bump_Head)
+   {
+    // Optional Phase-2 bonus: freeing the most-recent block rolls data_head back.
+    dynostatic_buffer_t ds_buffer = { 0 };
+    char *p1 = NULL;
+    char *p2 = NULL;
+
+    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&p1), 100), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&p2), 100), ERROR_DS_OK);
+
+    size_t head_before = ds_buffer.data_head;
+    ASSERT_EQ(ds_free(&ds_buffer, reinterpret_cast<void **>(&p2)), ERROR_DS_OK);
+    ASSERT_LT(ds_buffer.data_head, head_before);
+
+    ds_deinit_allocation(&ds_buffer);
+   }
+ */
+
+/* TODO: Fix/implement in DS-Buffer and uncomment
+   TEST(Free_Tests, Real_Double_Free_Is_Rejected)
+   {
+    // Unlike Free_Twice, keep an alias so the second call sees a non-NULL,
+    // already-freed address — this exercises the real double-free path.
+    dynostatic_buffer_t ds_buffer = { 0 };
+    char *p = NULL;
+
+    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&p), 5), ERROR_DS_OK);
+
+    char *alias = p;
+    ASSERT_EQ(ds_free(&ds_buffer, reinterpret_cast<void **>(&p)), ERROR_DS_OK);
+
+    // Pick whatever code you settle on (MEMORY_OUT_OF_DS / a dedicated one);
+    //   the contract is simply: a double free must NOT succeed.
+    ASSERT_NE(ds_free(&ds_buffer, reinterpret_cast<void **>(&alias)), ERROR_DS_OK);
+
+    ds_deinit_allocation(&ds_buffer);
+   }
+ */

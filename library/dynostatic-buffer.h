@@ -165,7 +165,7 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  * @retval ERROR_DS_NO_MEMORY There is not enough free memory to reallocate demanded block.
  * @retval ERROR_DS_TOO_BIG_CHUNK Demanded size of memory block is bigger than configured max size.
  */
-ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, const void **p_memory, size_t size);
+ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size);
 
 /**
  * @brief Get usage of memory allocated for dynostatic-buffer in %.

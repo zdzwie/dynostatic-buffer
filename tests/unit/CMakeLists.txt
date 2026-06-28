@@ -18,6 +18,9 @@ add_executable( ds_tests
                 utests-malloc.cpp
                 utests-free.cpp
                 utests-multi-alloc.cpp
+        utests-alligment.cpp
+        utests-calloc.cpp
+        utests-realloc.cpp
 )
 
 target_link_libraries(ds_tests PRIVATE

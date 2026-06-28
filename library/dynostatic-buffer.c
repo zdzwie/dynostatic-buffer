@@ -135,6 +135,52 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
     return ERROR_DS_OK;
 }
 
+ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t len, size_t size_of_elem)
+{
+    if (!p_ds_buffer->initialized) {
+        return ERROR_DS_NO_INIT;
+    }
+
+    if ((p_memory == NULL) || (len == 0) || (size_of_elem == 0)) {
+        return ERROR_DS_INVALID_ARG;
+    }
+
+    size_t total_size = len * size_of_elem;
+    if (total_size / len != size_of_elem) { /* Check for overflow */
+        return ERROR_DS_INVALID_ARG;
+    }
+
+    ds_err_code_t ret = ds_malloc(p_ds_buffer, p_memory, total_size);
+    if (ret != ERROR_DS_OK) {
+        return ret;
+    }
+
+    memset(*p_memory, 0, total_size);
+    return ERROR_DS_OK;
+}
+
+ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size)
+{
+    if (!p_ds_buffer->initialized) {
+        return ERROR_DS_NO_INIT;
+    }
+
+    if (p_memory == NULL) {
+        return ERROR_DS_INVALID_ARG;
+    }
+
+    if (size == 0) {
+        return ds_free(p_ds_buffer, p_memory);
+    }
+
+    if (*p_memory == NULL) {
+        return ds_malloc(p_ds_buffer, p_memory, size);
+    }
+
+    // TODO: Finish implementation
+    return ERROR_DS_OK;
+}
+
 ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_memory_usage)
 {
     size_t usage = 0;
