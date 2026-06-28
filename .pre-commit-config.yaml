@@ -16,15 +16,24 @@ repos:
 
   # Code formatting with clang-format 18 (pinned via the mirror rev below).
   # The hook ships its own clang-format binary, so no system install is needed.
-  # -style=file forces use of the repo-root .clang-format; -fallback-style=none
-  # ensures clang-format NEVER falls back to a built-in style if that file is
-  # missing (it skips instead), so formatting only ever follows .clang-format.
+  #
+  # Run in check/report mode rather than auto-fix:
+  #   --dry-run --Werror  report each violation as "file:line: error ..." and
+  #                       exit non-zero, so pre-commit prints WHAT is wrong
+  #                       instead of the mirror's silent "-i" rewrite (which
+  #                       only yields a generic "files were modified" message).
+  #                       --dry-run also overrides the mirror's default -i, so
+  #                       no files are edited in place.
+  #   -style=file:clang-format  load the style from the repo-root `clang-format`
+  #                       file (it lacks the leading dot, so it is not
+  #                       auto-discovered and must be given explicitly).
+  #   --fallback-style=none     never fall back to a built-in style.
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v18.1.8
     hooks:
       - id: clang-format
         types_or: [c, c++]
-        args: [-style=file, --fallback-style=none]
+        args: [--dry-run, --Werror, -style=file:clang-format, --fallback-style=none]
 
   # Project-specific static analysis.
   - repo: local
