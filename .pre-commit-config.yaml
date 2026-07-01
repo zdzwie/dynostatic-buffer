@@ -47,6 +47,26 @@ repos:
         files: '\.(c|h|cpp|hpp)$'
         pass_filenames: true
 
+      # MISRA C:2012 compliance for the library sources, via cppcheck's bundled
+      # `misra` addon. The library is analysed as a whole (rather than per staged
+      # file) so cross-translation-unit rules -- e.g. 2.5 (unused macro) and 8.7
+      # (external linkage that could be internal) -- are judged against the
+      # complete code base instead of firing false positives on an isolated
+      # header. `files` only triggers the hook when a library source changes;
+      # `pass_filenames: false` keeps the analysis scoped to the whole `library`.
+      #
+      # cppcheck cannot ship the copyrighted MISRA rule texts, so findings are
+      # reported by rule number only ("misra violation ... [misra-c2012-X.Y]").
+      # To print the full rule wording, obtain the texts and append
+      # `--rule-texts=<file>` to the entry.
+      - id: cppcheck-misra
+        name: cppcheck MISRA C:2012 static analysis
+        language: system
+        entry: cppcheck --error-exitcode=1 --addon=misra
+          --inline-suppr --suppressions-list=suppressions.txt -I library library
+        files: '^library/.*\.(c|h)$'
+        pass_filenames: false
+
       # clang-tidy with the bugprone/cert/clang-analyzer/performance/
       # portability/misc check groups (configured in the repo-root `clang-tidy`
       # file). The wrapper generates a compilation database on demand via the

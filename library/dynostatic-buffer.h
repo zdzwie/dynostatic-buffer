@@ -21,35 +21,35 @@ extern "C" {
  * @defgroup ERR_CODES_DS Definitions of dynostatic-buffer error codes.
  * @{
  */
-#define ERROR_DS_OK               (0x00) /**< All goes ok. Any error reported.*/
-#define ERROR_DS_NO_INIT          (0x01) /**< Dynostatic buffer is not initialized. */
-#define ERROR_DS_INVALID_ARG      (0x02) /**< Some given argument is incorrect. */
-#define ERROR_DS_ALREADY_INIT     (0x03) /**< Dynostatic buffer was already initialized and cannot be initialized again. */
-#define ERROR_DS_NO_MEMORY        (0x04) /**< No free memory to allocate in dynostatic_buffer. */
-#define ERROR_DS_NO_ALLOCATORS    (0x05) /**< No free allocators to use. */
-#define ERROR_DS_TOO_BIG_CHUNK    (0x06) /**< Demanded size of chunk is bigger than configured max size. */
-#define ERROR_DS_MEMORY_OUT_OF_DS (0x07) /**< Pointer given to deallocate is not allocate in dynostatic-buffer. */
-#define ERROR_DS_CRITICAL_ERR     (0x08) /**< Critical error detected. */
-#define ERROR_DS_PTR_ALLOC_YET    (0x09) /**< Pointer given to function is currently allocated by ds-buffer.*/
+#define ERROR_DS_OK               ((ds_err_code_t)(0x00u)) /**< All goes ok. Any error reported.*/
+#define ERROR_DS_NO_INIT          ((ds_err_code_t)(0x01u)) /**< Dynostatic buffer is not initialized. */
+#define ERROR_DS_INVALID_ARG      ((ds_err_code_t)(0x02u)) /**< Some given argument is incorrect. */
+#define ERROR_DS_ALREADY_INIT     ((ds_err_code_t)(0x03u)) /**< Dynostatic buffer was already initialized and cannot be initialized again. */
+#define ERROR_DS_NO_MEMORY        ((ds_err_code_t)(0x04u)) /**< No free memory to allocate in dynostatic_buffer. */
+#define ERROR_DS_NO_ALLOCATORS    ((ds_err_code_t)(0x05u)) /**< No free allocators to use. */
+#define ERROR_DS_TOO_BIG_CHUNK    ((ds_err_code_t)(0x06u)) /**< Demanded size of chunk is bigger than configured max size. */
+#define ERROR_DS_MEMORY_OUT_OF_DS ((ds_err_code_t)(0x07u)) /**< Pointer given to deallocate is not allocate in dynostatic-buffer. */
+#define ERROR_DS_CRITICAL_ERR     ((ds_err_code_t)(0x08u)) /**< Critical error detected. */
+#define ERROR_DS_PTR_ALLOC_YET    ((ds_err_code_t)(0x09u)) /**< Pointer given to function is currently allocated by ds-buffer.*/
 /**@}*/
 
-#ifndef DS_BUFFER_MEMORY_SIZE          /**< If You not use CMake and KConfig. */
-    #define DS_BUFFER_MEMORY_SIZE 1024 /**< Size of buffer prepared for dynostatic-buffer. */
+#ifndef DS_BUFFER_MEMORY_SIZE           /**< If You not use CMake and KConfig. */
+    #define DS_BUFFER_MEMORY_SIZE 1024u /**< Size of buffer prepared for dynostatic-buffer. */
 #endif
 
 #ifndef DS_LOG_ENABLE           /**< If You not use CMake and KConfig. */
     #define DS_LOG_ENABLE false /**< Enable or disable logging from dynostatic-buffer. */
 #endif
 
-#ifndef DS_MAX_ALLOCATION_COUNT        /**< If You not use CMake and KConfig. */
-    #define DS_MAX_ALLOCATION_COUNT 10 /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
+#ifndef DS_MAX_ALLOCATION_COUNT         /**< If You not use CMake and KConfig. */
+    #define DS_MAX_ALLOCATION_COUNT 10u /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
 #endif
 
-#ifndef DS_MAX_ALLOCATION_SIZE         /**< If You not use CMake and KConfig. */
-    #define DS_MAX_ALLOCATION_SIZE 256 /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
+#ifndef DS_MAX_ALLOCATION_SIZE          /**< If You not use CMake and KConfig. */
+    #define DS_MAX_ALLOCATION_SIZE 256u /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
 #endif
 
-#if (DS_BUFFER_MEMORY_SIZE == 0) || (DS_MAX_ALLOCATION_COUNT == 0) || (DS_MAX_ALLOCATION_SIZE == 0)
+#if (DS_BUFFER_MEMORY_SIZE <= 0) || (DS_MAX_ALLOCATION_COUNT <= 0) || (DS_MAX_ALLOCATION_SIZE <= 0)
     #error Invalid config!
 #endif
 
@@ -100,7 +100,7 @@ typedef struct {
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
  *
  * @retval ERROR_DS_OK Dynostatic-buffer is properly initialized.
- * @retval ERROR_DS_INVALID_ARG Some of given parameter is incorrect.
+ * @retval ERROR_DS_INVALID_ARG Some given parameter is incorrect.
  */
 ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer);
 

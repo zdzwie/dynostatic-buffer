@@ -56,7 +56,7 @@ static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero)
     DS_ASSERT(p_dest != NULL);
     DS_ASSERT(size_to_zero <= dest_size); /* the destination-size_to_zero guard memset_s adds */
 
-    memset(p_dest, 0, size_to_zero); /* NOLINT(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) */
+    (void)memset(p_dest, 0u, size_to_zero); /* NOLINT(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) */
 
     (void)dest_size;
 }
@@ -64,7 +64,7 @@ static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero)
 static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size)
 {
     size_t iter;
-    if ((size == 0) || size > DS_MAX_ALLOCATION_SIZE) {
+    if ((size == 0u) || (size > DS_MAX_ALLOCATION_SIZE)) {
         return ERROR_DS_INVALID_ARG;
     }
 
@@ -80,6 +80,8 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
             }
         } else if (p_ds_buffer->allocators[iter].allocation_status == DS_NOT_USED) {
             break;
+        } else {
+            /* No action */
         }
     }
 
@@ -124,7 +126,7 @@ ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
         return ERROR_DS_NO_INIT;
     }
 
-    if ((p_memory == NULL) || (size == 0)) {
+    if ((p_memory == NULL) || (size == 0u)) {
         return ERROR_DS_INVALID_ARG;
     }
 
@@ -138,7 +140,7 @@ ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
         return ret;
     }
 
-    *p_memory = (p_ds_buffer->memory + p_ds_buffer->data_head);
+    *p_memory = &p_ds_buffer->memory[p_ds_buffer->data_head];
     return ERROR_DS_OK;
 }
 
@@ -153,7 +155,7 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
     }
 
     if (((uint8_t *)*p_memory < p_ds_buffer->memory)
-        && ((uint8_t *)*p_memory > ((p_ds_buffer->memory + DS_BUFFER_MEMORY_SIZE)))) {
+        && ((uint8_t *)*p_memory > &p_ds_buffer->memory[DS_BUFFER_MEMORY_SIZE])) {
         return ERROR_DS_MEMORY_OUT_OF_DS;
     }
 
@@ -171,12 +173,12 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
         return ERROR_DS_NO_INIT;
     }
 
-    if ((p_memory == NULL) || (len == 0) || (size_of_elem == 0)) {
+    if ((p_memory == NULL) || (len == 0u) || (size_of_elem == 0u)) {
         return ERROR_DS_INVALID_ARG;
     }
 
     size_t total_size = len * size_of_elem;
-    if (total_size / len != size_of_elem) { /* Check for overflow */
+    if ((total_size / len) != size_of_elem) { /* Check for overflow */
         return ERROR_DS_INVALID_ARG;
     }
 
@@ -199,7 +201,7 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
         return ERROR_DS_INVALID_ARG;
     }
 
-    if (size == 0) {
+    if (size == 0u) {
         return ds_free(p_ds_buffer, p_memory);
     }
 
@@ -233,7 +235,7 @@ ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_m
         return ERROR_DS_CRITICAL_ERR;
     }
 
-    *p_memory_usage = (uint8_t)((100 * usage) / DS_BUFFER_MEMORY_SIZE);
+    *p_memory_usage = (uint8_t)((100u * usage) / DS_BUFFER_MEMORY_SIZE);
     return ERROR_DS_OK;
 }
 

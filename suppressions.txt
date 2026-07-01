@@ -1,0 +1,3 @@
+misra-c2012-15.5:library/dynostatic-buffer.c
+misra-c2012-11.5:library/dynostatic-buffer.c
+misra-c2012-8.7:library/dynostatic-buffer.h
