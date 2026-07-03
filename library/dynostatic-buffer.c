@@ -23,9 +23,9 @@ extern "C" {
 
 #ifndef DS_ASSERT
     /**
- * @brief Wrapper for assertion
- * @param[in] cond Condition to check.
- */
+     * @brief Wrapper for assertion
+     * @param[in] cond Condition to check.
+     */
     #define DS_ASSERT(cond) assert(cond)
 #endif
 
@@ -43,13 +43,14 @@ static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero);
  *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
  * @param[in] size Size of memory chunk which will be allocated.
+ * @param[out] p_alloc_idx Pointer to variable, where index of new allocator will be saved.
  *
  * @retval ERROR_DS_OK Memory is properly allocated in dynostatic-buffer.
  * @retval ERROR_DS_NO_MEMORY There is not enough free memory to allocate demanded memory chunk.
  * @retval ERROR_DS_NO_ALLOCATORS There is not enough free allocators to use.
  * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
  */
-static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size);
+static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size, size_t *p_alloc_idx);
 
 static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero)
 {
@@ -61,7 +62,7 @@ static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero)
     (void)dest_size;
 }
 
-static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size)
+static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size, size_t *p_alloc_idx)
 {
     size_t iter;
     if ((size == 0u) || (size > DS_MAX_ALLOCATION_SIZE)) {
@@ -75,7 +76,9 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
     for (iter = 0u; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
         if (p_ds_buffer->allocators[iter].allocation_status == DS_FREE) {
             if (p_ds_buffer->allocators[iter].size >= size) {
-                DS_GET_USED_ALLOCATOR(p_ds_buffer->allocators[iter], size);
+                p_ds_buffer->allocators[iter].allocation_status = DS_ALLOCATED;
+                p_ds_buffer->used_allocators++;
+                *p_alloc_idx = iter;
                 return ERROR_DS_OK;
             }
         } else if (p_ds_buffer->allocators[iter].allocation_status == DS_NOT_USED) {
@@ -85,18 +88,21 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
         }
     }
 
-    if ((DS_BUFFER_MEMORY_SIZE - p_ds_buffer->data_head) < size) {
-        return ERROR_DS_NO_MEMORY;
-    }
-
     if (iter == DS_MAX_ALLOCATION_COUNT) {
         return ERROR_DS_NO_ALLOCATORS;
+    }
+
+    if ((DS_BUFFER_MEMORY_SIZE - p_ds_buffer->data_head) < size) {
+        return ERROR_DS_NO_MEMORY;
     }
 
     p_ds_buffer->allocators[iter].allocation_status = DS_ALLOCATED;
     p_ds_buffer->allocators[iter].size = size;
     p_ds_buffer->allocators[iter].head = p_ds_buffer->data_head;
     p_ds_buffer->data_head += size;
+    p_ds_buffer->used_allocators++;
+
+    *p_alloc_idx = iter;
 
     return ERROR_DS_OK;
 }
@@ -134,13 +140,13 @@ ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
         return ERROR_DS_TOO_BIG_CHUNK;
     }
 
-    ds_err_code_t ret;
-    ret = ds_get_new_allocator(p_ds_buffer, size);
+    size_t alloc_idx;
+    ds_err_code_t ret = ds_get_new_allocator(p_ds_buffer, size, &alloc_idx);
     if (ret != ERROR_DS_OK) {
         return ret;
     }
 
-    *p_memory = &p_ds_buffer->memory[p_ds_buffer->data_head];
+    *p_memory = &p_ds_buffer->memory[p_ds_buffer->allocators[alloc_idx].head];
     return ERROR_DS_OK;
 }
 
@@ -154,8 +160,8 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
         return ERROR_DS_INVALID_ARG;
     }
 
-    if (((uint8_t *)*p_memory < p_ds_buffer->memory)
-        && ((uint8_t *)*p_memory > &p_ds_buffer->memory[DS_BUFFER_MEMORY_SIZE])) {
+    if (((uintptr_t *)*p_memory < p_ds_buffer->memory)
+        || ((uintptr_t *)*p_memory >= &p_ds_buffer->memory[DS_BUFFER_MEMORY_SIZE])) {
         return ERROR_DS_MEMORY_OUT_OF_DS;
     }
 
