@@ -4,25 +4,25 @@
  * @copyright Copyright (c) 2026
  *
  * @brief Unit tests for alignment behaviour.
- * @version 0.2
- * @date 2026-07-03
+ * @version 0.3
+ * @date 2026-07-04
  */
 #include "utests-common.hpp"
+
+/*
+ * The whole file is guarded at COMPILE TIME: with no DS_ALIGNMENT defined by
+ * the implementation the macro does not exist at all (utests-common.hpp no
+ * longer provides a fallback), so every reference below would fail to build.
+ * Runtime skipping (if (DS_ALIGNMENT == 1u)) is not an option anymore for the
+ * same reason — selection moved from runtime to the preprocessor.
+ */
+#if DS_TEST_HAS_ALIGNMENT
 
 using dstest::AlignUp;
 using dstest::DsBufferTest;
 using dstest::IsAligned;
 
-class Alignment_Tests : public DsBufferTest {
-  protected:
-    void SetUp() override
-    {
-        if (DS_ALIGNMENT == 1u) {
-            GTEST_SKIP() << "implementation does not define DS_ALIGNMENT yet";
-        }
-        DsBufferTest::SetUp();
-    }
-};
+class Alignment_Tests : public DsBufferTest {};
 
 class Alignment_Param_Tests : public Alignment_Tests,
                               public ::testing::WithParamInterface<size_t> {};
@@ -75,6 +75,8 @@ TEST_F(Alignment_Tests, Minimal_Requests_Consume_Full_Alignment)
         << "malloc(1) must physically consume DS_ALIGNMENT bytes";
 }
 
+/* Boundary: aligned-size accounting at the end of the buffer. A raw request
+ * would fit in the remaining space, but its aligned size does not. */
 TEST_F(Alignment_Tests, Aligned_Size_Exceeds_Remaining_Space)
 {
     /* Consume the buffer down to exactly one aligned slot. */
@@ -126,3 +128,14 @@ TEST_F(Alignment_Tests, Aligned_Size_Exceeds_Remaining_Space)
     ASSERT_EQ(p2, original);
    }
  */
+
+#else /* !DS_TEST_HAS_ALIGNMENT */
+
+/* Single aggregate skip keeps the suite visible in the report as
+ * deliberately skipped — not falsely green, not forgotten. */
+TEST(Alignment_Tests, Skipped_Implementation_Has_No_DS_ALIGNMENT)
+{
+    GTEST_SKIP() << "implementation does not define DS_ALIGNMENT yet";
+}
+
+#endif /* DS_TEST_HAS_ALIGNMENT */

@@ -64,6 +64,18 @@ inline size_t AlignUp(size_t v)
 #endif /* DS_TEST_HAS_ALIGNMENT */
 
 /**
+     * @brief Expected ds_get_memory_usage() result for a set of live allocations.
+     *
+     * @param[in] total_aligned_bytes Total count of aligned bytes allocated in the buffer.
+     *
+    * @return Expected memory usage in %.
+     */
+inline uint8_t ExpectedUsage(size_t total_aligned_bytes)
+{
+    return static_cast<uint8_t>((100u * total_aligned_bytes) / DS_BUFFER_MEMORY_SIZE);
+}
+
+/**
  * @class DsBufferTest
  * @brief Fixture with an initialized buffer.
  *
