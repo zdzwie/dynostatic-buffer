@@ -4,68 +4,114 @@
  * @copyright Copyright (c) 2026
  *
  * @brief Unit tests for calloc function behaviour.
- * @version 0.1
- * @date 2026-06-28
- *
+ * @version 0.2
+ * @date 2026-07-03
  */
+#include "utests-common.hpp"
 
-#include <gtest/gtest.h>
+using dstest::AlignUp;
+using dstest::DsBufferTest;
+using dstest::ExpectedUsage;
 
-#include <cstdint>
-#include <cstddef>
-#include <cstring>
+class Calloc_Tests : public DsBufferTest {};
 
-extern "C" {
-#include "dynostatic-buffer.h"
-#include "error.h"
-}
-
-TEST(Calloc_Tests, No_Init)
+TEST(Calloc_NoFixture_Tests, No_Init)
 {
     dynostatic_buffer_t ds_buffer = { 0 };
     char *p = NULL;
+
     ASSERT_EQ(ds_calloc(&ds_buffer, reinterpret_cast<void **>(&p), 4, 4), ERROR_DS_NO_INIT);
 }
 
-TEST(Calloc_Tests, Memory_Is_Zeroed)
+TEST_F(Calloc_Tests, Bad_Args)
 {
-    dynostatic_buffer_t ds_buffer = { 0 };
+    char *p = NULL;
+
+    ASSERT_EQ(ds_calloc(&buf_, NULL, 4, 4), ERROR_DS_INVALID_ARG);
+    ASSERT_EQ(ds_calloc(&buf_, reinterpret_cast<void **>(&p), 0, 4), ERROR_DS_INVALID_ARG);
+    ASSERT_EQ(ds_calloc(&buf_, reinterpret_cast<void **>(&p), 4, 0), ERROR_DS_INVALID_ARG);
+}
+
+TEST_F(Calloc_Tests, Overflow_Is_Rejected)
+{
+    char *p = NULL;
+    const size_t huge = (SIZE_MAX / 2) + 1; /* huge * 4 overflows size_t */
+
+    ASSERT_EQ(ds_calloc(&buf_, reinterpret_cast<void **>(&p), huge, 4), ERROR_DS_INVALID_ARG);
+}
+
+TEST_F(Calloc_Tests, Total_Size_Too_Big)
+{
+    char *p = NULL;
+
+    ASSERT_EQ(ds_calloc(&buf_, reinterpret_cast<void **>(&p), DS_MAX_ALLOCATION_SIZE, 2),
+              ERROR_DS_TOO_BIG_CHUNK);
+}
+
+TEST_F(Calloc_Tests, Memory_Is_Zeroed)
+{
     uint8_t *p = NULL;
     const size_t len = 8;
     const size_t elem = 4;
 
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_calloc(&ds_buffer, reinterpret_cast<void **>(&p), len, elem), ERROR_DS_OK);
+    ASSERT_EQ(ds_calloc(&buf_, reinterpret_cast<void **>(&p), len, elem), ERROR_DS_OK);
     ASSERT_TRUE(p != NULL);
 
     for (size_t i = 0; i < len * elem; i++) {
         ASSERT_EQ(p[i], 0u) << "byte " << i << " not zeroed";
     }
-
-    ds_deinit_allocation(&ds_buffer);
 }
 
-TEST(Calloc_Tests, Overflow_Is_Rejected)
+TEST_F(Calloc_Tests, Usage_Reflects_Total_Size)
 {
-    dynostatic_buffer_t ds_buffer = { 0 };
-    char *p = NULL;
-    const size_t huge = (SIZE_MAX / 2) + 1; /* huge * 4 overflows size_t */
+    uint8_t *p = NULL;
+    const size_t len = 8;
+    const size_t elem = 4;
+    uint8_t usage = 0xFF;
 
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_calloc(&ds_buffer, reinterpret_cast<void **>(&p), huge, 4), ERROR_DS_INVALID_ARG);
-
-    ds_deinit_allocation(&ds_buffer);
+    ASSERT_EQ(ds_calloc(&buf_, reinterpret_cast<void **>(&p), len, elem), ERROR_DS_OK);
+    ASSERT_EQ(ds_get_memory_usage(&buf_, &usage), ERROR_DS_OK);
+    ASSERT_EQ(usage, ExpectedUsage(AlignUp(len * elem)));
 }
 
-TEST(Calloc_Tests, Bad_Args)
+/* TODO: Fix/implement in DS-Buffer and uncomment (needs working ds_free with
+ * block reuse). A REUSED block is dirty by definition — calloc must zero it.
+ * This is the regression trap for the ds_zero(dest_size) bug in ds_calloc.
+   TEST_F(Calloc_Tests, Reused_Block_Is_Zeroed)
+   {
+    uint8_t *p = NULL;
+    char *guard = NULL;
+    const size_t len = 16;
+
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&guard), 8), ERROR_DS_OK);
+
+    std::memset(p, 0xFF, len); // dirty the block before freeing
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&p)), ERROR_DS_OK);
+
+    ASSERT_EQ(ds_calloc(&buf_, reinterpret_cast<void **>(&p), len, 1), ERROR_DS_OK);
+    for (size_t i = 0; i < len; i++) {
+        ASSERT_EQ(p[i], 0u) << "reused byte " << i << " not zeroed";
+    }
+
+    // The guard block must be untouched by calloc's zeroing.
+    // (guard was never written, so verify via a written pattern instead:)
+   }
+ */
+
+TEST_F(Calloc_Tests, Zeroing_Does_Not_Spill_Into_Neighbour)
 {
-    dynostatic_buffer_t ds_buffer = { 0 };
-    char *p = NULL;
+    uint8_t *first = NULL;
+    uint8_t *zeroed = NULL;
+    const size_t len = 16;
 
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_calloc(&ds_buffer, NULL, 4, 4), ERROR_DS_INVALID_ARG);
-    ASSERT_EQ(ds_calloc(&ds_buffer, reinterpret_cast<void **>(&p), 0, 4), ERROR_DS_INVALID_ARG);
-    ASSERT_EQ(ds_calloc(&ds_buffer, reinterpret_cast<void **>(&p), 4, 0), ERROR_DS_INVALID_ARG);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&first), len), ERROR_DS_OK);
+    std::memset(first, 0xEE, len);
 
-    ds_deinit_allocation(&ds_buffer);
+    ASSERT_EQ(ds_calloc(&buf_, reinterpret_cast<void **>(&zeroed), len, 1), ERROR_DS_OK);
+
+    for (size_t i = 0; i < len; i++) {
+        ASSERT_EQ(first[i], 0xEE) << "neighbour byte " << i << " clobbered by calloc zeroing";
+        ASSERT_EQ(zeroed[i], 0u) << "calloc byte " << i << " not zeroed";
+    }
 }
