@@ -9,13 +9,15 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include "error.h"
+#include <stdalign.h>
 
 #pragma once
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*---------Macros-And-Defines---------*/
 
 /**
  * @defgroup ERR_CODES_DS Definitions of dynostatic-buffer error codes.
@@ -49,13 +51,29 @@ extern "C" {
     #define DS_MAX_ALLOCATION_SIZE 256u /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
 #endif
 
-#if (DS_BUFFER_MEMORY_SIZE <= 0) || (DS_MAX_ALLOCATION_COUNT <= 0) || (DS_MAX_ALLOCATION_SIZE <= 0)
-    #error Invalid config!
+#ifndef DS_ALIGNMENT
+    #define DS_ALIGNMENT (4u) /**< Alignment for memory allocations. */
 #endif
 
-#if DS_BUFFER_MEMORY_SIZE < DS_MAX_ALLOCATION_SIZE
-    #error To big max allocation count!
+#ifdef __cplusplus
+    #define DS_STATIC_ASSERT(cond, msg) static_assert(cond, msg)
+#else
+    #define DS_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
 #endif
+
+DS_STATIC_ASSERT((DS_ALIGNMENT & (DS_ALIGNMENT - 1u)) == 0u, "DS_ALIGNMENT must be a power of two");
+DS_STATIC_ASSERT(DS_ALIGNMENT >= alignof(uint32_t), "DS_ALIGNMENT must at least satisfy 32-bit types");
+DS_STATIC_ASSERT(DS_ALIGNMENT <= alignof(max_align_t), "DS_ALIGNMENT exceeds the strictest fundamental alignment");
+DS_STATIC_ASSERT(DS_MAX_ALLOCATION_SIZE <= DS_BUFFER_MEMORY_SIZE, "DS_MAX_ALLOCATION_SIZE must not exceed DS_BUFFER_MEMORY_SIZE");
+DS_STATIC_ASSERT(DS_MAX_ALLOCATION_COUNT > 0u, "DS_MAX_ALLOCATION_COUNT must be positive");
+DS_STATIC_ASSERT(DS_MAX_ALLOCATION_SIZE > 0u, "DS_MAX_ALLOCATION_SIZE must be positive");
+/* Test premise from Aligned_Size_Exceeds_Remaining_Space, promoted to compile time: */
+DS_STATIC_ASSERT((DS_MAX_ALLOCATION_SIZE % DS_ALIGNMENT) == 0u, "DS_MAX_ALLOCATION_SIZE must be a multiple of DS_ALIGNMENT");
+/* Overflow guard for ds_align_up (discussed at #7 — closes the implicit
+     * size + (DS_ALIGNMENT - 1) wraparound relationship for free): */
+DS_STATIC_ASSERT(DS_MAX_ALLOCATION_SIZE <= (SIZE_MAX - DS_ALIGNMENT) + 1u, "ds_align_up may overflow for sizes near SIZE_MAX");
+
+/*---------------Types----------------*/
 
 typedef uint16_t ds_err_code_t; /**< Type of error code used in dynostatic-buffer. */
 
@@ -93,6 +111,8 @@ typedef struct {
     ds_allocator_t allocators[DS_MAX_ALLOCATION_COUNT]; /**< List with structure described possible allocations. */
     size_t used_allocators;                             /**< Number of currently used allocators. */
 } dynostatic_buffer_t;
+
+/*-----Public-Function-Declaration----*/
 
 /**
  * @brief Initialize allocation buffer
