@@ -140,7 +140,7 @@ static inline size_t ds_align_up(size_t size)
 
 ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
 {
-    if (p_ds_buffer == NULL) {
+    if (NULL == p_ds_buffer) {
         return ERROR_DS_INVALID_ARG;
     }
 
@@ -160,12 +160,12 @@ ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
 
 ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size)
 {
-    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
-        return ERROR_DS_NO_INIT;
+    if ((NULL == p_ds_buffer) || (NULL == p_memory) || (size == 0u)) {
+        return ERROR_DS_INVALID_ARG;
     }
 
-    if ((p_memory == NULL) || (size == 0u)) {
-        return ERROR_DS_INVALID_ARG;
+    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
+        return ERROR_DS_NO_INIT;
     }
 
     if (size > DS_MAX_ALLOCATION_SIZE) {
@@ -184,12 +184,12 @@ ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
 
 ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
 {
-    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
-        return ERROR_DS_NO_INIT;
+    if ((NULL == p_ds_buffer) || (NULL == p_memory) || (NULL == *p_memory)) {
+        return ERROR_DS_INVALID_ARG;
     }
 
-    if ((p_memory == NULL) || (*p_memory == NULL)) {
-        return ERROR_DS_INVALID_ARG;
+    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
+        return ERROR_DS_NO_INIT;
     }
 
     const uintptr_t addr = (uintptr_t)*p_memory;
@@ -212,12 +212,12 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
 
 ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t len, size_t size_of_elem)
 {
-    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
-        return ERROR_DS_NO_INIT;
+    if ((NULL == p_ds_buffer) || (NULL == p_memory) || (len == 0u) || (size_of_elem == 0u)) {
+        return ERROR_DS_INVALID_ARG;
     }
 
-    if ((p_memory == NULL) || (len == 0u) || (size_of_elem == 0u)) {
-        return ERROR_DS_INVALID_ARG;
+    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
+        return ERROR_DS_NO_INIT;
     }
 
     size_t total_size = len * size_of_elem;
@@ -236,7 +236,7 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
 
 ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size)
 {
-    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
+    if ((NULL == p_ds_buffer) || (p_ds_buffer->init_magic != DS_MAGIC_NUMBER)) {
         return ERROR_DS_NO_INIT;
     }
 
@@ -259,7 +259,7 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
 ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_memory_usage)
 {
     size_t usage = 0;
-    if (p_memory_usage == NULL) {
+    if ((NULL == p_ds_buffer) || (p_memory_usage == NULL)) {
         return ERROR_DS_INVALID_ARG;
     }
 
@@ -284,6 +284,10 @@ ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_m
 
 ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer)
 {
+    if (NULL == p_ds_buffer) {
+        return ERROR_DS_INVALID_ARG;
+    }
+
     if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
         return ERROR_DS_NO_INIT;
     }

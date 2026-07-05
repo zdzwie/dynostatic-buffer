@@ -16,9 +16,17 @@ class Free_Tests : public DsBufferTest {};
 TEST(Free_NoFixture_Tests, Free_Uninitialized)
 {
     dynostatic_buffer_t ds_buffer = { 0 };
-    char *pointer = NULL;
+    char tmp;
+    char *pointer = &tmp;
 
     ASSERT_EQ(ds_free(&ds_buffer, reinterpret_cast<void **>(&pointer)), ERROR_DS_NO_INIT);
+}
+
+TEST(Free_NoFixture_Tests, Free_Null_Buffer)
+{
+    char *pointer = NULL;
+
+    ASSERT_EQ(ds_free(NULL, reinterpret_cast<void **>(&pointer)), ERROR_DS_INVALID_ARG);
 }
 
 TEST_F(Free_Tests, Free_Bad_Input_Params)

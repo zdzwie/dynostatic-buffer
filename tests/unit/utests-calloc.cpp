@@ -23,6 +23,13 @@ TEST(Calloc_NoFixture_Tests, No_Init)
     ASSERT_EQ(ds_calloc(&ds_buffer, reinterpret_cast<void **>(&p), 4, 4), ERROR_DS_NO_INIT);
 }
 
+TEST(Calloc_NoFixture_Tests, Null_Buffer)
+{
+    char *p = NULL;
+
+    ASSERT_EQ(ds_calloc(NULL, reinterpret_cast<void **>(&p), 4, 4), ERROR_DS_INVALID_ARG);
+}
+
 TEST_F(Calloc_Tests, Bad_Args)
 {
     char *p = NULL;
