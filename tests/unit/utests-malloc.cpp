@@ -26,6 +26,13 @@ TEST(Malloc_NoFixture_Tests, Malloc_UnInitialized)
     ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), 5), ERROR_DS_NO_INIT);
 }
 
+TEST(Malloc_NoFixture_Tests, Malloc_Null_Buffer)
+{
+    char *pointer = NULL;
+
+    ASSERT_EQ(ds_malloc(NULL, reinterpret_cast<void **>(&pointer), 5), ERROR_DS_INVALID_ARG);
+}
+
 TEST_F(Malloc_Tests, Malloc_Bad_Input_Params)
 {
     char *pointer = NULL;

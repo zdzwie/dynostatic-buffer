@@ -37,6 +37,11 @@ TEST(Initialization_Tests, Deinit_Without_Init)
     ASSERT_EQ(ds_deinit_allocation(&ds_buffer), ERROR_DS_NO_INIT);
 }
 
+TEST(Initialization_Tests, Deinit_Null_Buffer)
+{
+    ASSERT_EQ(ds_deinit_allocation(NULL), ERROR_DS_INVALID_ARG);
+}
+
 /* Behavioural check that a full deinit/init cycle really resets allocator
  * state: after the cycle the whole buffer must be allocatable again. */
 TEST(Initialization_Tests, Reinit_Restores_Full_Capacity)

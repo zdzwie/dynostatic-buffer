@@ -23,6 +23,15 @@ TEST(Realloc_NoFixture_Tests, No_Init)
     ASSERT_EQ(ds_realloc(&ds_buffer, &p, 16), ERROR_DS_NO_INIT);
 }
 
+TEST(Realloc_NoFixture_Tests, Null_Buffer)
+{
+    void *p = NULL;
+
+    /* ds_realloc folds the NULL-buffer check into its init check, so a NULL
+     * buffer surfaces as ERROR_DS_NO_INIT rather than ERROR_DS_INVALID_ARG. */
+    ASSERT_EQ(ds_realloc(NULL, &p, 16), ERROR_DS_NO_INIT);
+}
+
 TEST_F(Realloc_Tests, Bad_Args)
 {
     ASSERT_EQ(ds_realloc(&buf_, NULL, 16), ERROR_DS_INVALID_ARG);
