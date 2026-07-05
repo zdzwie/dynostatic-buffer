@@ -23,6 +23,8 @@
     #define DS_ASSERT(cond) assert(cond)
 #endif
 
+#define DS_MAGIC_NUMBER (0x1525u) /**< Magic number to check that DS-buffer is initialized or not. */
+
 /*-----Static-Function-Prototypes-----*/
 
 /**
@@ -47,6 +49,18 @@ static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero);
  * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
  */
 static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size, size_t *p_alloc_idx);
+
+/**
+ * @brief Get allocator matched to given pointer.
+ *
+ * @param p_ds_buffer Pointer to dynostatic-buffer structure.
+ * @param p_memory Pointer to memory, which allocator should be found.
+ * @param p_alloc_idx Pointer to variable, where index of found allocator will be saved.
+ *
+ * @retval ERROR_DS_OK Allocator is properly found.
+ *
+ */
+static ds_err_code_t ds_found_allocator_for_memory(dynostatic_buffer_t *p_ds_buffer, void *p_memory, size_t *p_alloc_idx);
 
 /**
  * @brief Align size up to the nearest multiple of alignment.
@@ -130,11 +144,13 @@ ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
         return ERROR_DS_INVALID_ARG;
     }
 
-    if (p_ds_buffer->initialized) {
+    if (p_ds_buffer->init_magic == DS_MAGIC_NUMBER) {
         return ERROR_DS_ALREADY_INIT;
     }
 
-    p_ds_buffer->initialized = true;
+    p_ds_buffer->init_magic = DS_MAGIC_NUMBER;
+    p_ds_buffer->data_head = 0;
+    p_ds_buffer->used_allocators = 0;
 
     ds_zero(p_ds_buffer->memory, DS_BUFFER_MEMORY_SIZE, DS_BUFFER_MEMORY_SIZE);
     ds_zero(p_ds_buffer->allocators, sizeof(p_ds_buffer->allocators), sizeof(p_ds_buffer->allocators));
@@ -144,7 +160,7 @@ ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
 
 ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size)
 {
-    if (!p_ds_buffer->initialized) {
+    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
         return ERROR_DS_NO_INIT;
     }
 
@@ -168,7 +184,7 @@ ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
 
 ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
 {
-    if (!p_ds_buffer->initialized) {
+    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
         return ERROR_DS_NO_INIT;
     }
 
@@ -196,7 +212,7 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
 
 ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t len, size_t size_of_elem)
 {
-    if (!p_ds_buffer->initialized) {
+    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
         return ERROR_DS_NO_INIT;
     }
 
@@ -220,7 +236,7 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
 
 ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size)
 {
-    if (!p_ds_buffer->initialized) {
+    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
         return ERROR_DS_NO_INIT;
     }
 
@@ -247,7 +263,7 @@ ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_m
         return ERROR_DS_INVALID_ARG;
     }
 
-    if (!p_ds_buffer->initialized) {
+    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
         return ERROR_DS_NO_INIT;
     }
 
@@ -268,11 +284,11 @@ ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_m
 
 ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer)
 {
-    if (!p_ds_buffer->initialized) {
+    if (p_ds_buffer->init_magic != DS_MAGIC_NUMBER) {
         return ERROR_DS_NO_INIT;
     }
 
-    p_ds_buffer->initialized = false;
+    p_ds_buffer->init_magic = 0;
     ds_zero(p_ds_buffer->memory, DS_BUFFER_MEMORY_SIZE, DS_BUFFER_MEMORY_SIZE);
     ds_zero(p_ds_buffer->allocators, sizeof(p_ds_buffer->allocators), sizeof(p_ds_buffer->allocators));
     p_ds_buffer->data_head = 0;
