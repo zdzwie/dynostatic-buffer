@@ -20,24 +20,8 @@ extern "C" {
 #include "error.h"
 }
 
-/*
- * Alignment contract of this test suite:
- *  - if the implementation defines DS_ALIGNMENT, all size arithmetic in the
- *    tests is rounded up to it (AlignUp);
- *  - fallback of 1 models the pre-alignment implementation: AlignUp becomes
- *    the identity, so the very same suite passes both BEFORE and AFTER the
- *    alignment fix lands. Alignment-specific tests detect the fallback and
- *    GTEST_SKIP themselves (see utests-alignment.cpp).
- */
-#ifdef DS_ALIGNMENT
-    #define DS_TEST_HAS_ALIGNMENT 1
-#else
-    #define DS_TEST_HAS_ALIGNMENT 0
-#endif
 
 namespace dstest {
-
-#if DS_TEST_HAS_ALIGNMENT
 
 inline bool IsAligned(const void *p)
 {
@@ -48,20 +32,6 @@ inline size_t AlignUp(size_t v)
 {
     return (v + (DS_ALIGNMENT - 1u)) & ~static_cast<size_t>(DS_ALIGNMENT - 1u);
 }
-
-#else /* pre-alignment implementation */
-
-inline bool IsAligned(const void *)
-{
-    return true;
-}
-
-inline size_t AlignUp(size_t v)
-{
-    return v;
-}
-
-#endif /* DS_TEST_HAS_ALIGNMENT */
 
 /**
      * @brief Expected ds_get_memory_usage() result for a set of live allocations.

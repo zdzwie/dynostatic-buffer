@@ -13,13 +13,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define DS_GET_USED_ALLOCATOR(ALLOCATOR, SIZE)    \
-    (ALLOCATOR).allocation_status = DS_ALLOCATED; \
-    (ALLOCATOR).size = SIZE /**< Macro to inserting size for given allocator. */
+/*---------Macros-And-Defines---------*/
 
 #ifndef DS_ASSERT
     /**
@@ -28,6 +22,8 @@ extern "C" {
      */
     #define DS_ASSERT(cond) assert(cond)
 #endif
+
+/*-----Static-Function-Prototypes-----*/
 
 /**
  * @brief Perform secure memset with zeros of memory.
@@ -52,6 +48,17 @@ static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero);
  */
 static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size, size_t *p_alloc_idx);
 
+/**
+ * @brief Align size up to the nearest multiple of alignment.
+ *
+ * @param[in] size Size to be aligned.
+ *
+ * @return Aligned size.
+ */
+static inline size_t ds_align_up(size_t size);
+
+/*---Static-Function-Implementation---*/
+
 static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero)
 {
     DS_ASSERT(p_dest != NULL);
@@ -73,9 +80,11 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
         return ERROR_DS_NO_ALLOCATORS;
     }
 
+    const size_t aligned_size = ds_align_up(size);
+
     for (iter = 0u; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
         if (p_ds_buffer->allocators[iter].allocation_status == DS_FREE) {
-            if (p_ds_buffer->allocators[iter].size >= size) {
+            if (p_ds_buffer->allocators[iter].size >= aligned_size) {
                 p_ds_buffer->allocators[iter].allocation_status = DS_ALLOCATED;
                 p_ds_buffer->used_allocators++;
                 *p_alloc_idx = iter;
@@ -92,14 +101,14 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
         return ERROR_DS_NO_ALLOCATORS;
     }
 
-    if ((DS_BUFFER_MEMORY_SIZE - p_ds_buffer->data_head) < size) {
+    if ((DS_BUFFER_MEMORY_SIZE - p_ds_buffer->data_head) < aligned_size) {
         return ERROR_DS_NO_MEMORY;
     }
 
     p_ds_buffer->allocators[iter].allocation_status = DS_ALLOCATED;
-    p_ds_buffer->allocators[iter].size = size;
+    p_ds_buffer->allocators[iter].size = aligned_size;
     p_ds_buffer->allocators[iter].head = p_ds_buffer->data_head;
-    p_ds_buffer->data_head += size;
+    p_ds_buffer->data_head += aligned_size;
     p_ds_buffer->used_allocators++;
 
     *p_alloc_idx = iter;
@@ -107,6 +116,13 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
     return ERROR_DS_OK;
 }
 
+static inline size_t ds_align_up(size_t size)
+{
+    const size_t mask = (size_t)DS_ALIGNMENT - 1u;
+    return (size + mask) & ~mask;
+}
+
+/*---Public-Function-Implementation---*/
 
 ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
 {
@@ -160,8 +176,13 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
         return ERROR_DS_INVALID_ARG;
     }
 
-    if (((uintptr_t *)*p_memory < p_ds_buffer->memory)
-        || ((uintptr_t *)*p_memory >= &p_ds_buffer->memory[DS_BUFFER_MEMORY_SIZE])) {
+    const uintptr_t addr = (uintptr_t)*p_memory;
+    /* cppcheck-suppress misra-c2012-11.4 ; deviation: integer comparison is the
+     * defined-behaviour alternative to relational comparison of unrelated pointers */
+    const uintptr_t start = (uintptr_t)p_ds_buffer->memory;
+    const uintptr_t end = start + (uintptr_t)DS_BUFFER_MEMORY_SIZE; /* one-past-end */
+
+    if ((addr < start) || (addr >= end)) {
         return ERROR_DS_MEMORY_OUT_OF_DS;
     }
 
@@ -258,7 +279,3 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer)
     p_ds_buffer->used_allocators = 0;
     return ERROR_DS_OK;
 }
-
-#ifdef __cplusplus
-}
-#endif
