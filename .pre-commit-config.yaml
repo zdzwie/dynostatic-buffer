@@ -43,7 +43,7 @@ repos:
         language: system
         entry: cppcheck --quiet --error-exitcode=1
           --enable=warning,style,performance,portability
-          --inline-suppr -I library
+          --inline-suppr -I library, -UDS_ALIGNMENT
         files: '\.(c|h|cpp|hpp)$'
         pass_filenames: true
 

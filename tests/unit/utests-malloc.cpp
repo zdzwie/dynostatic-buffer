@@ -4,149 +4,136 @@
  * @copyright Copyright (c) 2022
  *
  * @brief Unit tests for malloc function behaviour.
- * @version 0.1
- * @date 2022-07-17
- *
+ * @version 0.2
+ * @date 2026-07-03
  */
-
-#include <gtest/gtest.h>
+#include "utests-common.hpp"
 #include "logger.hpp"
 
-extern "C" {
-#include "dynostatic-buffer.h"
-#include "error.h"
-}
-
-#include <cmath>
+using dstest::AlignUp;
+using dstest::DsBufferTest;
+using dstest::ExpectedUsage;
 
 constexpr uint8_t max_memory_usage_deviation = 2; /**< Maximal deviation between calculated and read memory usage. */
 
-TEST(Malloc_Tests, Malloc_UnInitialized)
+class Malloc_Tests : public DsBufferTest {};
+
+TEST(Malloc_NoFixture_Tests, Malloc_UnInitialized)
 {
     dynostatic_buffer_t ds_buffer = { 0 };
     char *pointer = NULL;
-    size_t allocation_len = 5;
 
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), allocation_len), ERROR_DS_NO_INIT);
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), allocation_len), ERROR_DS_OK);
-
-    ds_deinit_allocation(&ds_buffer);
+    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), 5), ERROR_DS_NO_INIT);
 }
 
-TEST(Malloc_Tests, Malloc_Bad_Input_Params)
+TEST_F(Malloc_Tests, Malloc_Bad_Input_Params)
 {
-    dynostatic_buffer_t ds_buffer = { 0 };
     char *pointer = NULL;
-    size_t allocation_len = 5;
 
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&ds_buffer, NULL, allocation_len), ERROR_DS_INVALID_ARG);
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), 0), ERROR_DS_INVALID_ARG);
-
-    ds_deinit_allocation(&ds_buffer);
+    ASSERT_EQ(ds_malloc(&buf_, NULL, 5), ERROR_DS_INVALID_ARG);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer), 0), ERROR_DS_INVALID_ARG);
 }
 
-TEST(Malloc_Tests, Malloc_To_Big_Chunk)
+TEST_F(Malloc_Tests, Malloc_To_Big_Chunk)
 {
-    dynostatic_buffer_t ds_buffer = { 0 };
     char *pointer = NULL;
-    size_t allocation_len = DS_MAX_ALLOCATION_SIZE + 1;
 
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), allocation_len), ERROR_DS_TOO_BIG_CHUNK);
-
-    ds_deinit_allocation(&ds_buffer);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer), DS_MAX_ALLOCATION_SIZE + 1),
+              ERROR_DS_TOO_BIG_CHUNK);
 }
 
-TEST(Malloc_Tests, Malloc_Too_Many_Times)
+TEST_F(Malloc_Tests, Malloc_No_NULL)
 {
-    dynostatic_buffer_t ds_buffer = { 0 };
     char *pointer = NULL;
-    size_t allocation_len = 1;
 
-    ASSERT_TRUE((DS_MAX_ALLOCATION_COUNT * DS_MAX_ALLOCATION_SIZE) >= DS_BUFFER_MEMORY_SIZE);
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer), 5), ERROR_DS_OK);
+    ASSERT_TRUE(pointer != NULL);
+}
+
+TEST_F(Malloc_Tests, Malloc_Too_Many_Times)
+{
+    char *pointer = NULL;
+
+    /* Premise guard: allocator slots must run out BEFORE memory does,
+     * otherwise this test would fail with ERROR_DS_NO_MEMORY instead. */
+    ASSERT_LE(DS_MAX_ALLOCATION_COUNT * AlignUp(1u), DS_BUFFER_MEMORY_SIZE);
 
     for (unsigned int iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
-        ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), allocation_len), ERROR_DS_OK);
+        ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer), 1), ERROR_DS_OK) << "iteration " << iter;
+        pointer = NULL;
     }
 
-    Logger::info("Allocated ", ds_buffer.used_allocators, " times.");
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), allocation_len), ERROR_DS_NO_ALLOCATORS);
-
-    ds_deinit_allocation(&ds_buffer);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer), 1), ERROR_DS_NO_ALLOCATORS);
 }
 
-TEST(Malloc_Tests, Malloc_No_NULL)
+TEST_F(Malloc_Tests, Malloc_Lack_Of_Memory)
 {
-    dynostatic_buffer_t ds_buffer = { 0 };
     char *pointer = NULL;
-    size_t allocation_len = 5;
+    const size_t chunk = AlignUp(DS_MAX_ALLOCATION_SIZE);
+    const size_t full_chunks = DS_BUFFER_MEMORY_SIZE / chunk;
 
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), allocation_len), ERROR_DS_OK);
+    /* Premise guard: memory must run out BEFORE allocator slots do. */
+    ASSERT_LT(full_chunks, DS_MAX_ALLOCATION_COUNT);
 
-    ASSERT_TRUE(pointer != NULL);
-
-    ds_deinit_allocation(&ds_buffer);
-}
-
-TEST(Malloc_Tests, Malloc_Lack_Of_Memory)
-{
-    dynostatic_buffer_t ds_buffer = { 0 };
-    char *pointer = NULL;
-    size_t allocation_len = DS_MAX_ALLOCATION_SIZE;
-    unsigned int allocation_iter = 1;
-
-    ASSERT_EQ(((DS_MAX_ALLOCATION_COUNT * DS_MAX_ALLOCATION_SIZE) >= DS_BUFFER_MEMORY_SIZE), true);
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-
-    while ((allocation_iter * DS_MAX_ALLOCATION_SIZE) <= DS_BUFFER_MEMORY_SIZE) {
-        ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), allocation_len), ERROR_DS_OK);
-        allocation_iter++;
+    for (size_t iter = 0; iter < full_chunks; iter++) {
+        ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer), DS_MAX_ALLOCATION_SIZE), ERROR_DS_OK)
+            << "iteration " << iter;
+        pointer = NULL;
     }
 
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), allocation_len), ERROR_DS_NO_MEMORY);
-    ds_deinit_allocation(&ds_buffer);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer), DS_MAX_ALLOCATION_SIZE), ERROR_DS_NO_MEMORY);
 }
 
-TEST(Malloc_Tests, Malloc_Proper_Size)
+TEST_F(Malloc_Tests, Malloc_Proper_Size)
 {
-    dynostatic_buffer_t ds_buffer = { 0 };
     char *pointer = NULL;
-    size_t allocation_len = DS_MAX_ALLOCATION_SIZE;
     uint8_t r_memory_usage = 0;
-    uint8_t c_memory_usage = (uint8_t)(DS_MAX_ALLOCATION_SIZE * 100ul / DS_BUFFER_MEMORY_SIZE);
+    const uint8_t c_memory_usage = ExpectedUsage(AlignUp(DS_MAX_ALLOCATION_SIZE));
 
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&pointer), allocation_len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer), DS_MAX_ALLOCATION_SIZE), ERROR_DS_OK);
+    ASSERT_EQ(ds_get_memory_usage(&buf_, &r_memory_usage), ERROR_DS_OK);
 
-    ASSERT_EQ(ds_get_memory_usage(&ds_buffer, &r_memory_usage), ERROR_DS_OK);
+    Logger::info("Calculated usage: ", (unsigned int)c_memory_usage,
+                 " Read memory usage: ", (unsigned int)r_memory_usage);
 
-    Logger::info("Calculated usage: ", ((unsigned int)c_memory_usage), " Read memory usage: ", ((unsigned int)r_memory_usage));
-
-    ASSERT_TRUE(abs(r_memory_usage - c_memory_usage) < max_memory_usage_deviation);
-    ds_deinit_allocation(&ds_buffer);
+    ASSERT_NEAR(r_memory_usage, c_memory_usage, max_memory_usage_deviation);
 }
 
-TEST(Malloc_Tests, Malloc_Proper_Allocators)
+TEST_F(Malloc_Tests, Malloc_Proper_Allocators)
 {
-    dynostatic_buffer_t ds_buffer = { 0 };
     char *first_pointer = NULL;
     char *second_pointer = NULL;
-    size_t allocation_len = 10;
-    size_t ptr_diff = 0;
+    const size_t allocation_len = 10;
 
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&first_pointer), allocation_len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&second_pointer), allocation_len), ERROR_DS_OK);
 
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&first_pointer), allocation_len), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&second_pointer), allocation_len), ERROR_DS_OK);
-
-    ptr_diff = (size_t)(second_pointer - first_pointer);
+    const size_t ptr_diff = (size_t)(second_pointer - first_pointer);
 
     Logger::info("Distance in memory of two pointers: ", (unsigned int)ptr_diff, " bytes");
 
-    ASSERT_EQ(ptr_diff, allocation_len);
-    ds_deinit_allocation(&ds_buffer);
+    /* Physical stride is the ALIGNED size; with the DS_ALIGNMENT == 1
+     * fallback this degrades to the raw length (pre-alignment behaviour). */
+    ASSERT_EQ(ptr_diff, AlignUp(allocation_len));
+}
+
+/* Behavioural catcher for the wrong-pointer-return bug: patterns written to
+ * two adjacent blocks must not clobber each other, and each block must be
+ * readable back in full. */
+TEST_F(Malloc_Tests, Blocks_Do_Not_Overlap)
+{
+    uint8_t *p1 = NULL;
+    uint8_t *p2 = NULL;
+    const size_t len = 16;
+
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p1), len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p2), len), ERROR_DS_OK);
+
+    std::memset(p1, 0xA5, len);
+    std::memset(p2, 0x5A, len);
+
+    for (size_t i = 0; i < len; i++) {
+        ASSERT_EQ(p1[i], 0xA5) << "block 1 clobbered at byte " << i;
+        ASSERT_EQ(p2[i], 0x5A) << "block 2 clobbered at byte " << i;
+    }
 }

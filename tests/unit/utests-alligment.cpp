@@ -3,72 +3,139 @@
  * @author Jakub Brzezowski
  * @copyright Copyright (c) 2026
  *
- * @brief Unit tests for alligment behaviour.
- * @version 0.1
- * @date 2026-06-28
- *
+ * @brief Unit tests for alignment behaviour.
+ * @version 0.3
+ * @date 2026-07-04
  */
+#include "utests-common.hpp"
 
-#include <gtest/gtest.h>
-
-#include <cstdint>
-#include <cstddef>
-#include <cstring>
-
-extern "C" {
-#include "dynostatic-buffer.h"
-#include "error.h"
-}
-
-/* Fallback if the implementation does not yet expose its alignment. */
-#ifndef DS_ALIGNMENT
-    #define DS_ALIGNMENT (alignof(max_align_t))
-#endif
-
-namespace {
-inline bool is_aligned(const void *p, size_t a)
-{
-    return (reinterpret_cast<uintptr_t>(p) % a) == 0u;
-}
-
-inline size_t align_up(size_t v, size_t a)
-{
-    return (v + (a - 1u)) & ~(a - 1u);
-}
-} // namespace
-
-/* TODO: Fix/implement in DS-Buffer and uncomment
-   TEST(Alignment_Tests, Pointer_Is_Aligned)
-   {
-    dynostatic_buffer_t ds_buffer = { 0 };
-    char *p = NULL;
-
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-
-    // Odd size on purpose: the allocator must still hand back an aligned ptr.
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&p), 1), ERROR_DS_OK);
-    ASSERT_TRUE(is_aligned(p, DS_ALIGNMENT));
-
-    ds_deinit_allocation(&ds_buffer);
-   }
+/*
+ * The whole file is guarded at COMPILE TIME: with no DS_ALIGNMENT defined by
+ * the implementation the macro does not exist at all (utests-common.hpp no
+ * longer provides a fallback), so every reference below would fail to build.
+ * Runtime skipping (if (DS_ALIGNMENT == 1u)) is not an option anymore for the
+ * same reason — selection moved from runtime to the preprocessor.
  */
+#if DS_TEST_HAS_ALIGNMENT
 
-/* TODO: Fix/implement in DS-Buffer and uncomment
-   TEST(Alignment_Tests, Consecutive_Stride_Is_Aligned)
-   {
-    dynostatic_buffer_t ds_buffer = { 0 };
+using dstest::AlignUp;
+using dstest::DsBufferTest;
+using dstest::IsAligned;
+
+class Alignment_Tests : public DsBufferTest {};
+
+class Alignment_Param_Tests : public Alignment_Tests,
+                              public ::testing::WithParamInterface<size_t> {};
+
+TEST_P(Alignment_Param_Tests, Malloc_Returns_Aligned_Pointer)
+{
+    void *p = nullptr;
+
+    ASSERT_EQ(ds_malloc(&buf_, &p, GetParam()), ERROR_DS_OK);
+    ASSERT_TRUE(IsAligned(p)) << "size=" << GetParam();
+}
+
+TEST_P(Alignment_Param_Tests, Calloc_Returns_Aligned_Pointer)
+{
+    void *p = nullptr;
+
+    ASSERT_EQ(ds_calloc(&buf_, &p, GetParam(), 1u), ERROR_DS_OK);
+    ASSERT_TRUE(IsAligned(p)) << "len=" << GetParam();
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Various_Sizes, Alignment_Param_Tests,
+    ::testing::Values(1u, 2u, 3u, static_cast<size_t>(DS_ALIGNMENT),
+                      static_cast<size_t>(DS_ALIGNMENT) + 1u,
+                      (2u * DS_ALIGNMENT) - 1u, 2u * DS_ALIGNMENT));
+
+TEST_F(Alignment_Tests, Consecutive_Stride_Is_Aligned)
+{
     char *p1 = NULL;
     char *p2 = NULL;
-    const size_t len = 10; // not a multiple of DS_ALIGNMENT
+    const size_t len = 10; /* not a multiple of DS_ALIGNMENT (for align >= 4) */
 
-    ASSERT_EQ(ds_initialize_allocation(&ds_buffer), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&p1), len), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&ds_buffer, reinterpret_cast<void **>(&p2), len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p1), len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p2), len), ERROR_DS_OK);
 
-    // Second block starts at the aligned end of the first, not raw len bytes.
-    ASSERT_EQ(static_cast<size_t>(p2 - p1), align_up(len, DS_ALIGNMENT));
-    ASSERT_TRUE(is_aligned(p2, DS_ALIGNMENT));
+    /* Second block starts at the aligned end of the first, not raw len bytes. */
+    ASSERT_EQ(static_cast<size_t>(p2 - p1), AlignUp(len));
+    ASSERT_TRUE(IsAligned(p2));
+}
 
-    ds_deinit_allocation(&ds_buffer);
+TEST_F(Alignment_Tests, Minimal_Requests_Consume_Full_Alignment)
+{
+    char *p1 = NULL;
+    char *p2 = NULL;
+
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p1), 1), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p2), 1), ERROR_DS_OK);
+
+    ASSERT_EQ(static_cast<size_t>(p2 - p1), static_cast<size_t>(DS_ALIGNMENT))
+        << "malloc(1) must physically consume DS_ALIGNMENT bytes";
+}
+
+/* Boundary: aligned-size accounting at the end of the buffer. A raw request
+ * would fit in the remaining space, but its aligned size does not. */
+TEST_F(Alignment_Tests, Aligned_Size_Exceeds_Remaining_Space)
+{
+    /* Consume the buffer down to exactly one aligned slot. */
+    size_t remaining = DS_BUFFER_MEMORY_SIZE - (DS_BUFFER_MEMORY_SIZE % DS_ALIGNMENT);
+    char *p = NULL;
+
+    ASSERT_EQ(AlignUp(DS_MAX_ALLOCATION_SIZE), static_cast<size_t>(DS_MAX_ALLOCATION_SIZE))
+        << "test premise: DS_MAX_ALLOCATION_SIZE must be alignment-multiple";
+
+    while (remaining > DS_ALIGNMENT) {
+        size_t chunk = remaining - DS_ALIGNMENT;
+        if (chunk > DS_MAX_ALLOCATION_SIZE) {
+            chunk = DS_MAX_ALLOCATION_SIZE;
+        }
+        ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), chunk), ERROR_DS_OK);
+        p = NULL;
+        remaining -= chunk;
+    }
+
+    /* Exactly DS_ALIGNMENT bytes of aligned space remain: a request of
+     * DS_ALIGNMENT + 1 rounds to 2*DS_ALIGNMENT and must be rejected... */
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), DS_ALIGNMENT + 1), ERROR_DS_NO_MEMORY);
+
+    /* ...while an unaligned request of 1 byte still fits the last slot. */
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), 1), ERROR_DS_OK);
+    ASSERT_TRUE(IsAligned(p));
+
+    /* Buffer is now physically full despite the last request being 1 byte. */
+    p = NULL;
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), 1), ERROR_DS_NO_MEMORY);
+}
+
+/* TODO: Fix/implement in DS-Buffer and uncomment (needs working ds_free with
+ * block reuse — the guard pins the bump head, forcing the reuse path).
+   TEST_F(Alignment_Tests, Reused_Block_Is_Aligned)
+   {
+    char *p1 = NULL;
+    char *p2 = NULL;
+    char *guard = NULL;
+
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p1), 3), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&guard), 1), ERROR_DS_OK);
+
+    char *original = p1;
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&p1)), ERROR_DS_OK);
+
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p2), 1), ERROR_DS_OK);
+    ASSERT_TRUE(IsAligned(p2));
+    ASSERT_EQ(p2, original);
    }
  */
+
+#else /* !DS_TEST_HAS_ALIGNMENT */
+
+/* Single aggregate skip keeps the suite visible in the report as
+ * deliberately skipped — not falsely green, not forgotten. */
+TEST(Alignment_Tests, Skipped_Implementation_Has_No_DS_ALIGNMENT)
+{
+    GTEST_SKIP() << "implementation does not define DS_ALIGNMENT yet";
+}
+
+#endif /* DS_TEST_HAS_ALIGNMENT */
