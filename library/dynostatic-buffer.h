@@ -23,16 +23,16 @@ extern "C" {
  * @defgroup ERR_CODES_DS Definitions of dynostatic-buffer error codes.
  * @{
  */
-#define ERROR_DS_OK               ((ds_err_code_t)(0x00u)) /**< All goes ok. Any error reported.*/
-#define ERROR_DS_NO_INIT          ((ds_err_code_t)(0x01u)) /**< Dynostatic buffer is not initialized. */
-#define ERROR_DS_INVALID_ARG      ((ds_err_code_t)(0x02u)) /**< Some given argument is incorrect. */
-#define ERROR_DS_ALREADY_INIT     ((ds_err_code_t)(0x03u)) /**< Dynostatic buffer was already initialized and cannot be initialized again. */
-#define ERROR_DS_NO_MEMORY        ((ds_err_code_t)(0x04u)) /**< No free memory to allocate in dynostatic_buffer. */
-#define ERROR_DS_NO_ALLOCATORS    ((ds_err_code_t)(0x05u)) /**< No free allocators to use. */
-#define ERROR_DS_TOO_BIG_CHUNK    ((ds_err_code_t)(0x06u)) /**< Demanded size of chunk is bigger than configured max size. */
-#define ERROR_DS_MEMORY_OUT_OF_DS ((ds_err_code_t)(0x07u)) /**< Pointer given to deallocate is not allocate in dynostatic-buffer. */
-#define ERROR_DS_CRITICAL_ERR     ((ds_err_code_t)(0x08u)) /**< Critical error detected. */
-#define ERROR_DS_PTR_ALLOC_YET    ((ds_err_code_t)(0x09u)) /**< Pointer given to function is currently allocated by ds-buffer.*/
+#define ERROR_DS_OK                  ((ds_err_code_t)(0x00u)) /**< All goes ok. Any error reported.*/
+#define ERROR_DS_NO_INIT             ((ds_err_code_t)(0x01u)) /**< Dynostatic buffer is not initialized. */
+#define ERROR_DS_INVALID_ARG         ((ds_err_code_t)(0x02u)) /**< Some given argument is incorrect. */
+#define ERROR_DS_ALREADY_INIT        ((ds_err_code_t)(0x03u)) /**< Dynostatic buffer was already initialized and cannot be initialized again. */
+#define ERROR_DS_NO_MEMORY           ((ds_err_code_t)(0x04u)) /**< No free memory to allocate in dynostatic_buffer. */
+#define ERROR_DS_NO_ALLOCATORS       ((ds_err_code_t)(0x05u)) /**< No free allocators to use. */
+#define ERROR_DS_TOO_BIG_CHUNK       ((ds_err_code_t)(0x06u)) /**< Demanded size of chunk is bigger than configured max size. */
+#define ERROR_DS_MEMORY_OUT_OF_DS    ((ds_err_code_t)(0x07u)) /**< Pointer given to deallocate is not allocate in dynostatic-buffer. */
+#define ERROR_DS_CRITICAL_ERR        ((ds_err_code_t)(0x08u)) /**< Critical error detected. */
+#define ERROR_DS_ALLOCATOR_NOT_FOUND ((ds_err_code_t)(0x09u)) /**< Allocator for given pointer is not found. */
 /**@}*/
 
 #ifndef DS_BUFFER_MEMORY_SIZE           /**< If You not use CMake and KConfig. */
@@ -103,13 +103,13 @@ typedef struct {
  * @brief Structure describe dynostatic buffer, which is using to emulate dynamic allocation without any allocation in heap.
  */
 typedef struct {
-    uint8_t memory[DS_BUFFER_MEMORY_SIZE]; /**< Memory declared for buffer. */
-    size_t data_head;                      /**< Head of data allocated in buffer. */
+    uint16_t init_magic;    /**< Magic number to check that DS-buffer is initialized or not. */
+    size_t data_head;       /**< Head of data allocated in buffer. */
+    size_t used_allocators; /**< Number of currently used allocators. */
 
-    bool initialized; /**< Dynostatic buffer is initialized. */
-
+    uint8_t memory[DS_BUFFER_MEMORY_SIZE];              /**< Memory declared for buffer. */
     ds_allocator_t allocators[DS_MAX_ALLOCATION_COUNT]; /**< List with structure described possible allocations. */
-    size_t used_allocators;                             /**< Number of currently used allocators. */
+
 } dynostatic_buffer_t;
 
 /*-----Public-Function-Declaration----*/
