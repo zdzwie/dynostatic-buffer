@@ -6,12 +6,13 @@
  * @date    2022-06-14
  */
 
+#ifndef DYNOSTATIC_BUFFER_H
+#define DYNOSTATIC_BUFFER_H
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdalign.h>
-
-#pragma once
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,6 +34,7 @@ extern "C" {
 #define ERROR_DS_MEMORY_OUT_OF_DS    ((ds_err_code_t)(0x07u)) /**< Pointer given to deallocate is not allocate in dynostatic-buffer. */
 #define ERROR_DS_CRITICAL_ERR        ((ds_err_code_t)(0x08u)) /**< Critical error detected. */
 #define ERROR_DS_ALLOCATOR_NOT_FOUND ((ds_err_code_t)(0x09u)) /**< Allocator for given pointer is not found. */
+
 /**@}*/
 
 #ifndef DS_BUFFER_MEMORY_SIZE           /**< If You not use CMake and KConfig. */
@@ -237,3 +239,5 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* DYNOSTATIC_BUFFER_H */
