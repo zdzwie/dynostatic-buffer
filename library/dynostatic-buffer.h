@@ -86,37 +86,141 @@ typedef uint16_t ds_err_code_t; /**< Type of error code used in dynostatic-buffe
 
 /**
  * @enum ds_allocator_status_t
- * @brief Current status of allocator.
+ * @brief Lifecycle state of an allocator record (see ds_allocator_t for the
+ *        full lifecycle diagram and the invariants tied to these states).
+ *
+ * @note CONTRACT: DS_NOT_USED must remain 0. ds_initialize_allocation()
+ *       establishes the all-records-DS_NOT_USED state by zeroing the
+ *       allocators array (ds_zero), and the compact-prefix invariant
+ *       assumes a zeroed record reads as DS_NOT_USED. Renumbering this
+ *       enum silently breaks initialization.
  */
 typedef enum {
-    DS_NOT_USED = 0x00, /**< Current allocator is not used to describe memory block. */
-    DS_FREE = 0x01,     /**< Current block is used to describe free memory block. */
-    DS_ALLOCATED = 0x02 /**< Current block is used to describe allocated memory block. */
+    DS_NOT_USED = 0x00, /**< Record carries no block: either never used, or
+                             reclaimed by bump-head rollback/cascade. head and
+                             size are zero and meaningless. Scans may stop at
+                             the first DS_NOT_USED record (compact prefix).
+                             Entered from: initialization, rollback of a
+                             trailing block. Leaves to: DS_ALLOCATED via a
+                             fresh bump allocation. */
+    DS_FREE = 0x01,     /**< Block was freed but its record is parked for
+                             reuse: head and size (physical capacity) remain
+                             valid, and contents are zeroed when
+                             DS_ZERO_ON_FREE is enabled. A later request of
+                             size <= capacity may reuse this exact block.
+                             Entered from: DS_ALLOCATED via ds_free of a
+                             non-trailing block. Leaves to: DS_ALLOCATED via
+                             reuse, or DS_NOT_USED via the reclamation
+                             cascade. */
+    DS_ALLOCATED = 0x02 /**< Block is live and owned by the caller: head and
+                             size (physical capacity, >= the requested size)
+                             are valid, contents belong to the user.
+                             Entered from: DS_NOT_USED (bump allocation) or
+                             DS_FREE (reuse). Leaves to: DS_FREE or
+                             DS_NOT_USED via ds_free, depending on whether
+                             the block is trailing. */
 } ds_allocator_status_t;
 
 /**
  * @typedef ds_allocator_t
- * @brief Definitions of allocator used to handle information about memory chunks in ds-buffer.
+ * @brief Bookkeeping record describing one memory block within the buffer.
+ *
+ * Lifecycle of a record:
+ * @verbatim
+ *   DS_NOT_USED --(bump allocation)--> DS_ALLOCATED <--(free/reuse)--> DS_FREE
+ *        ^                                                               |
+ *        +----------------(bump-head rollback / cascade)----------------+
+ * @endverbatim
+ * A record returns to DS_NOT_USED only when the bump head is rolled back
+ * over it (trailing-block reclamation); an ordinary free parks it as DS_FREE
+ * so the block can be reused by a later allocation of equal or smaller size.
+ *
+ * Field semantics depend on allocation_status:
+ * - DS_NOT_USED: head and size are zero and carry no meaning (slot never
+ *   used, or reclaimed by rollback).
+ * - DS_ALLOCATED / DS_FREE: head is the block's offset from the start of
+ *   dynostatic_buffer_t::memory; size is the block's PHYSICAL CAPACITY —
+ *   the requested size rounded up to DS_ALIGNMENT. Reusing a block with a
+ *   smaller request does NOT shrink size: capacity is retained for the
+ *   lifetime of the record.
+ *
+ * Invariants maintained by ds_malloc/ds_free — allocator scans, the early
+ * break on DS_NOT_USED, and the reclamation cascade all rely on them:
+ * 1. Compact prefix: every record past the first DS_NOT_USED slot is also
+ *    DS_NOT_USED, so scans may legally stop at the first DS_NOT_USED entry.
+ * 2. Ordering: among non-DS_NOT_USED records, array index order equals head
+ *    order (heads strictly increase with index).
+ * 3. Gapless partition: non-DS_NOT_USED records tile [0, data_head) exactly:
+ *    head[0] == 0 and head[i+1] == head[i] + size[i]. In particular the
+ *    block ending at data_head always sits at the highest touched index.
  */
 typedef struct {
-    size_t head; /**< Place in memory, where allocation part is started. */
-    size_t size; /**< Size of current allocated memory chunk. */
+    size_t head; /**< Offset of the block from the start of dynostatic_buffer_t::memory.
+                      Meaningful only when allocation_status != DS_NOT_USED. */
+    size_t size; /**< Physical capacity of the block (requested size aligned up to
+                      DS_ALIGNMENT); preserved on reuse. Meaningful only when
+                      allocation_status != DS_NOT_USED. */
 
-    ds_allocator_status_t allocation_status; /**< Current allocator is in use by another parts of code.*/
+    ds_allocator_status_t allocation_status; /**< Lifecycle state of this record; governs
+                                                  the meaning of head and size. */
 } ds_allocator_t;
 
 /**
  * @typedef dynostatic_buffer_t
- * @brief Structure describe dynostatic buffer, which is using to emulate dynamic allocation without any allocation in heap.
+ * @brief Self-contained allocator instance emulating dynamic allocation
+ *        inside a caller-provided static buffer — no heap, no globals.
+ *
+ * All state lives inline in this structure, so an instance can be placed in
+ * static storage (recommended), on a stack, or inside another object, and
+ * multiple independent instances may coexist. Note the footprint: roughly
+ * DS_BUFFER_MEMORY_SIZE + DS_MAX_ALLOCATION_COUNT * sizeof(ds_allocator_t)
+ * bytes — on small targets prefer static storage duration over the stack.
+ *
+ * Lifecycle: zero the structure (static storage duration does this for
+ * free), then ds_initialize_allocation(), then the allocation API, then
+ * ds_deinit_allocation() (zeroes all memory and bookkeeping).
+ *
+ * @warning Initialization detection relies on init_magic, so the structure
+ *          MUST be zero-initialized before the first
+ *          ds_initialize_allocation() call. An instance containing garbage
+ *          (e.g. a stack variable) may spuriously read as already
+ *          initialized. Static storage duration satisfies this requirement
+ *          automatically.
+ *
+ * @warning Not thread-safe and not ISR-safe: no internal locking. The
+ *          caller must serialize all API calls on a given instance
+ *          (distinct instances are fully independent).
+ *
+ * Pointers returned by the allocation API point into @ref memory and are
+ * aligned to DS_ALIGNMENT. They become invalid after ds_free() of the block
+ * and after ds_deinit_allocation() of the instance.
  */
 typedef struct {
-    uint16_t init_magic;    /**< Magic number to check that DS-buffer is initialized or not. */
-    size_t data_head;       /**< Head of data allocated in buffer. */
-    size_t used_allocators; /**< Number of currently used allocators. */
+    uint16_t init_magic;    /**< Equals DS_MAGIC_NUMBER while the instance is
+                                 initialized; any other value means
+                                 uninitialized. Requires the structure to be
+                                 zeroed before first init (see @warning). */
+    size_t data_head;       /**< Bump pointer: offset of the first byte of
+                                 never-touched (or reclaimed) space in memory.
+                                 Always in [0, DS_BUFFER_MEMORY_SIZE]. Equal to
+                                 the sum of capacities of all non-DS_NOT_USED
+                                 records (gapless-partition invariant, see
+                                 ds_allocator_t). Rolls back when trailing
+                                 blocks are freed. */
+    size_t used_allocators; /**< Number of records currently in DS_ALLOCATED
+                                 state (live blocks owned by callers). Parked
+                                 DS_FREE records are NOT counted. Always in
+                                 [0, DS_MAX_ALLOCATION_COUNT]. */
 
-    uint8_t memory[DS_BUFFER_MEMORY_SIZE];              /**< Memory declared for buffer. */
-    ds_allocator_t allocators[DS_MAX_ALLOCATION_COUNT]; /**< List with structure described possible allocations. */
-
+    alignas(DS_ALIGNMENT)
+        uint8_t memory[DS_BUFFER_MEMORY_SIZE];          /**< The arena. All user pointers point
+                                                             into this array; alignas guarantees the
+                                                             base address (and therefore every
+                                                             aligned offset) meets DS_ALIGNMENT. */
+    ds_allocator_t allocators[DS_MAX_ALLOCATION_COUNT]; /**< Block records; invariants documented
+                                                             at ds_allocator_t. Records are
+                                                             recruited in index order (compact
+                                                             prefix). */
 } dynostatic_buffer_t;
 
 /*-----Public-Function-Declaration----*/
