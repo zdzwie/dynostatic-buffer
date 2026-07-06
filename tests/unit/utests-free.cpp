@@ -136,15 +136,78 @@ TEST_F(Free_Tests, Real_Double_Free_Is_Rejected)
     ASSERT_NE(ds_free(&buf_, reinterpret_cast<void **>(&alias)), ERROR_DS_OK);
 }
 
-TEST_F(Free_Tests, Last_Block_Reclaims_Bump_Head)
+TEST_F(Free_Tests, Cascade_Reclaims_Free_Chain)
 {
-    char *p1 = NULL;
-    char *p2 = NULL;
+    /* Layout: [A][B][C], freeing B parks DS_FREE, freeing C cascades through B. */
+    char *pa = NULL;
+    char *pb = NULL;
+    char *pc = NULL;
+    const size_t len = dstest::AlignUp(32u);
 
-    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p1), 100), ERROR_DS_OK);
-    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p2), 100), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pa), len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pb), len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pc), len), ERROR_DS_OK);
 
-    size_t head_before = buf_.data_head;
-    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&p2)), ERROR_DS_OK);
-    ASSERT_LT(buf_.data_head, head_before);
+    char *pb_saved = pb;                                                    /* save B's address for later check */
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pb)), ERROR_DS_OK); /* parked */
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pc)), ERROR_DS_OK); /* trailing -> cascade */
+
+    /* 2*len exceeds any single freed block's capacity — only the reclaimed
+     * bump space can serve it, and it must land where B used to start. */
+    char *p_new = NULL;
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p_new), 2u * len), ERROR_DS_OK);
+    ASSERT_EQ(p_new, pb_saved); /* keep a saved copy of pb before freeing */
+}
+
+TEST_F(Free_Tests, Cascade_Stops_At_Allocated_Block)
+{
+    /* Layout: [A][B][C]; A stays allocated — cascade must stop above it. */
+    char *pa = NULL;
+    char *pb = NULL;
+    char *pc = NULL;
+    const size_t len = dstest::AlignUp(32u);
+
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pa), len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pb), len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pc), len), ERROR_DS_OK);
+    std::memset(pa, 0xAB, len);
+
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pb)), ERROR_DS_OK);
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pc)), ERROR_DS_OK);
+
+    /* A survives the sweep untouched... */
+    for (size_t i = 0; i < len; i++) {
+        ASSERT_EQ(static_cast<uint8_t>(pa[i]), 0xABu) << "byte " << i;
+    }
+    /* ...and is still freeable (its record was not clobbered). */
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pa)), ERROR_DS_OK);
+}
+
+TEST_F(Free_Tests, Full_Drain_Restores_Full_Capacity)
+{
+    /* Free everything in mixed order; the last free must cascade to zero
+     * and the whole buffer must be allocatable again. */
+    char *pa = NULL;
+    char *pb = NULL;
+    char *pc = NULL;
+    const size_t len = dstest::AlignUp(32u);
+
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pa), len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pb), len), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pc), len), ERROR_DS_OK);
+
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pb)), ERROR_DS_OK);
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pa)), ERROR_DS_OK);
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pc)), ERROR_DS_OK); /* cascades A+B+C */
+
+    uint8_t usage = 0xFF;
+    ASSERT_EQ(ds_get_memory_usage(&buf_, &usage), ERROR_DS_OK);
+    ASSERT_EQ(usage, 0u);
+
+    /* Behavioural proof of data_head == 0: DS_MAX chunks fill the buffer again. */
+    char *p = NULL;
+    for (size_t got = 0; got < DS_BUFFER_MEMORY_SIZE; got += DS_MAX_ALLOCATION_SIZE) {
+        ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), DS_MAX_ALLOCATION_SIZE), ERROR_DS_OK);
+        p = NULL;
+    }
 }

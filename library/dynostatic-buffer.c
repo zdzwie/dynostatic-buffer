@@ -71,6 +71,25 @@ static ds_err_code_t ds_find_allocator_for_memory(const dynostatic_buffer_t *p_d
  */
 static inline size_t ds_align_up(size_t size);
 
+/**
+ * @brief Reclaim the trailing block and cascade through any DS_FREE blocks
+ *        directly beneath it, rolling data_head back past all of them.
+ *
+ * Correctness rests on two invariants of bump allocation: (a) among touched
+ * slots, index order equals head order, so the trailing block always lives
+ * at the highest touched index; (b) touched slots form a gapless partition
+ * of [0, data_head), so after reclaiming slot idx the block ending exactly
+ * at the new data_head is always slot idx - 1.
+ *
+ * @pre allocators[alloc_idx] is the trailing block (head + size == data_head).
+ * @pre Block contents were already zeroed by their respective ds_free calls
+ *      (when DS_ZERO_ON_FREE is enabled) — this function only clears records.
+ *
+ * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
+ * @param[in] alloc_idx Index of the trailing block's allocator.
+ */
+static void ds_reclaim_trailing(dynostatic_buffer_t *p_ds_buffer, size_t alloc_idx);
+
 /*---Static-Function-Implementation---*/
 
 static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero)
@@ -163,6 +182,25 @@ static ds_err_code_t ds_find_allocator_for_memory(const dynostatic_buffer_t *p_d
     return ERROR_DS_ALLOCATOR_NOT_FOUND;
 }
 
+static void ds_reclaim_trailing(dynostatic_buffer_t *p_ds_buffer, size_t alloc_idx)
+{
+    size_t idx = alloc_idx;
+    bool cascade = true;
+
+    while (cascade) {
+        p_ds_buffer->data_head = p_ds_buffer->allocators[idx].head;
+        p_ds_buffer->allocators[idx].allocation_status = DS_NOT_USED;
+        p_ds_buffer->allocators[idx].head = 0u;
+        p_ds_buffer->allocators[idx].size = 0u;
+
+        if ((0u == idx) || (DS_FREE != p_ds_buffer->allocators[idx - 1u].allocation_status)) {
+            cascade = false;
+        } else {
+            idx--;
+        }
+    }
+}
+
 /*---Public-Function-Implementation---*/
 
 ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
@@ -237,11 +275,7 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
 #endif
 
     if ((head + size) == p_ds_buffer->data_head) {
-        /* Trailing block: reclaim bump space instead of parking a DS_FREE record. */
-        p_ds_buffer->data_head = head;
-        p_ds_buffer->allocators[alloc_idx].allocation_status = DS_NOT_USED;
-        p_ds_buffer->allocators[alloc_idx].head = 0u;
-        p_ds_buffer->allocators[alloc_idx].size = 0u;
+        ds_reclaim_trailing(p_ds_buffer, alloc_idx);
     } else {
         p_ds_buffer->allocators[alloc_idx].allocation_status = DS_FREE;
     }
