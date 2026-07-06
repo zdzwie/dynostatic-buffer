@@ -236,12 +236,12 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
 
 ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size)
 {
-    if ((NULL == p_ds_buffer) || (p_ds_buffer->init_magic != DS_MAGIC_NUMBER)) {
-        return ERROR_DS_NO_INIT;
+    if ((NULL == p_ds_buffer) || (p_memory == NULL)) {
+        return ERROR_DS_INVALID_ARG;
     }
 
-    if (p_memory == NULL) {
-        return ERROR_DS_INVALID_ARG;
+    if ((p_ds_buffer->init_magic != DS_MAGIC_NUMBER)) {
+        return ERROR_DS_NO_INIT;
     }
 
     if (size == 0u) {
@@ -253,7 +253,7 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
     }
 
     // TODO: Finish implementation
-    return ERROR_DS_OK;
+    return ERROR_DS_CRITICAL_ERR;
 }
 
 ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_memory_usage)
@@ -267,7 +267,7 @@ ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_m
         return ERROR_DS_NO_INIT;
     }
 
-    for (uint8_t iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
+    for (size_t iter = 0; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
         if (p_ds_buffer->allocators[iter].allocation_status == DS_ALLOCATED) {
             usage += p_ds_buffer->allocators[iter].size;
         }
