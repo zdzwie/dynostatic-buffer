@@ -61,9 +61,8 @@ TEST_F(Realloc_Tests, Null_Acts_As_Malloc)
  * is implemented.
  */
 
-/* TODO: Fix/implement in DS-Buffer and uncomment
-   TEST_F(Realloc_Tests, Zero_Size_Acts_As_Free)
-   {
+TEST_F(Realloc_Tests, Zero_Size_Acts_As_Free)
+{
     void *p = NULL;
     uint8_t usage = 0xFF;
 
@@ -73,8 +72,8 @@ TEST_F(Realloc_Tests, Null_Acts_As_Malloc)
 
     ASSERT_EQ(ds_get_memory_usage(&buf_, &usage), ERROR_DS_OK);
     ASSERT_EQ(usage, 0);
-   }
- */
+}
+
 
 /* TODO: Fix/implement in DS-Buffer and uncomment.
    TEST_F(Realloc_Tests, Shrink_Keeps_Pointer)

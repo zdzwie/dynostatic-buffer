@@ -60,7 +60,7 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
  * @retval ERROR_DS_OK Allocator is properly found.
  *
  */
-static ds_err_code_t ds_found_allocator_for_memory(dynostatic_buffer_t *p_ds_buffer, void *p_memory, size_t *p_alloc_idx);
+static ds_err_code_t ds_find_allocator_for_memory(const dynostatic_buffer_t *p_ds_buffer, void *p_memory, size_t *p_alloc_idx);
 
 /**
  * @brief Align size up to the nearest multiple of alignment.
@@ -136,6 +136,33 @@ static inline size_t ds_align_up(size_t size)
     return (size + mask) & ~mask;
 }
 
+static ds_err_code_t ds_find_allocator_for_memory(const dynostatic_buffer_t *p_ds_buffer, void *p_memory, size_t *p_alloc_idx)
+{
+    /* cppcheck-suppress misra-c2012-11.6 ; deviation: ... */
+    const uintptr_t addr = (uintptr_t)p_memory;
+    /* cppcheck-suppress misra-c2012-11.4 ; deviation: ... */
+    const uintptr_t start = (uintptr_t)p_ds_buffer->memory;
+
+    if ((addr < start) || ((addr - start) >= (uintptr_t)DS_BUFFER_MEMORY_SIZE)) {
+        return ERROR_DS_MEMORY_OUT_OF_DS;
+    }
+
+    const size_t offset = (size_t)(addr - start);
+
+    for (size_t iter = 0u; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
+        if (DS_NOT_USED == p_ds_buffer->allocators[iter].allocation_status) {
+            break; /* Nothing lives past the first NOT_USED */
+        }
+
+        if ((DS_ALLOCATED == p_ds_buffer->allocators[iter].allocation_status) && (offset == p_ds_buffer->allocators[iter].head)) {
+            *p_alloc_idx = iter;
+            return ERROR_DS_OK;
+        }
+    }
+
+    return ERROR_DS_ALLOCATOR_NOT_FOUND;
+}
+
 /*---Public-Function-Implementation---*/
 
 ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
@@ -173,7 +200,12 @@ ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
     }
 
     size_t alloc_idx;
-    ds_err_code_t ret = ds_get_new_allocator(p_ds_buffer, size, &alloc_idx);
+    ds_err_code_t ret = ds_find_allocator_for_memory(p_ds_buffer, *p_memory, &alloc_idx);
+    if (ret == ERROR_DS_OK) {
+        return ERROR_DS_PTR_ALLOC_YET;
+    }
+
+    ret = ds_get_new_allocator(p_ds_buffer, size, &alloc_idx);
     if (ret != ERROR_DS_OK) {
         return ret;
     }
@@ -192,20 +224,29 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
         return ERROR_DS_NO_INIT;
     }
 
-    const uintptr_t addr = (uintptr_t)*p_memory;
-    /* cppcheck-suppress misra-c2012-11.4 ; deviation: integer comparison is the
-     * defined-behaviour alternative to relational comparison of unrelated pointers */
-    const uintptr_t start = (uintptr_t)p_ds_buffer->memory;
-    const uintptr_t end = start + (uintptr_t)DS_BUFFER_MEMORY_SIZE; /* one-past-end */
-
-    if ((addr < start) || (addr >= end)) {
-        return ERROR_DS_MEMORY_OUT_OF_DS;
+    size_t alloc_idx;
+    ds_err_code_t ret = ds_find_allocator_for_memory(p_ds_buffer, *p_memory, &alloc_idx);
+    if (ret != ERROR_DS_OK) {
+        return ret;
     }
 
-    /* TODO: End implementation. */
+#ifdef DS_ZERO_ON_FREE
+    const size_t head = p_ds_buffer->allocators[alloc_idx].head;
+    const size_t size = p_ds_buffer->allocators[alloc_idx].size;
+    ds_zero(&p_ds_buffer->memory[head], DS_BUFFER_MEMORY_SIZE - head, size);
+#endif
+
+    if ((head + size) == p_ds_buffer->data_head) {
+        /* Trailing block: reclaim bump space instead of parking a DS_FREE record. */
+        p_ds_buffer->data_head = head;
+        p_ds_buffer->allocators[alloc_idx].allocation_status = DS_NOT_USED;
+        p_ds_buffer->allocators[alloc_idx].head = 0u;
+        p_ds_buffer->allocators[alloc_idx].size = 0u;
+    } else {
+        p_ds_buffer->allocators[alloc_idx].allocation_status = DS_FREE;
+    }
 
     p_ds_buffer->used_allocators--;
-
     *p_memory = NULL;
     return ERROR_DS_OK;
 }

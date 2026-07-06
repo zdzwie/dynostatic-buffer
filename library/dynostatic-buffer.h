@@ -34,6 +34,7 @@ extern "C" {
 #define ERROR_DS_MEMORY_OUT_OF_DS    ((ds_err_code_t)(0x07u)) /**< Pointer given to deallocate is not allocate in dynostatic-buffer. */
 #define ERROR_DS_CRITICAL_ERR        ((ds_err_code_t)(0x08u)) /**< Critical error detected. */
 #define ERROR_DS_ALLOCATOR_NOT_FOUND ((ds_err_code_t)(0x09u)) /**< Allocator for given pointer is not found. */
+#define ERROR_DS_PTR_ALLOC_YET       ((ds_err_code_t)(0x0Au)) /**< Pointer is already allocated. */
 
 /**@}*/
 
@@ -55,6 +56,10 @@ extern "C" {
 
 #ifndef DS_ALIGNMENT
     #define DS_ALIGNMENT (4u) /**< Alignment for memory allocations. */
+#endif
+
+#ifndef DS_ZERO_ON_FREE        /**< If You not use CMake and KConfig. */
+    #define DS_ZERO_ON_FREE 1u /**< Zero freed memory before releasing the block (security/cost trade-off). */
 #endif
 
 #ifdef __cplusplus

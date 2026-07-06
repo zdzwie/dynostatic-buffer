@@ -63,13 +63,11 @@ TEST_F(Multi_Alloc_Tests, Interleaved_Blocks_Keep_Contents)
     }
 }
 
-/* TODO: Fix it and uncomment that test.
-   TEST_F(Multi_Alloc_Tests, Malloc_Twice_Non_Free_Ptr)
-   {
+TEST_F(Multi_Alloc_Tests, Malloc_Twice_Non_Free_Ptr)
+{
     char *pointer1 = NULL;
     const size_t allocation_len = DS_MAX_ALLOCATION_SIZE;
 
     ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer1), allocation_len), ERROR_DS_OK);
     ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer1), allocation_len), ERROR_DS_PTR_ALLOC_YET);
-   }
- */
+}
