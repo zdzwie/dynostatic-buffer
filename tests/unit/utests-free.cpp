@@ -57,11 +57,8 @@ TEST_F(Free_Tests, Free_Twice_Via_Nulled_Pointer)
     ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pointer)), ERROR_DS_INVALID_ARG);
 }
 
-/* TODO: Fix/implement in DS-Buffer and uncomment (range check bug: '&&'
- * instead of '||' lets any out-of-range pointer through). Both directions
- * are separate tests on purpose — a broken '&&' passes one but not both.
-   TEST_F(Free_Tests, Free_Pointer_Below_DS_Rejected)
-   {
+TEST_F(Free_Tests, Free_Pointer_Below_DS_Rejected)
+{
     char test_variable = 5;
     char *pointer = &test_variable;
 
@@ -69,18 +66,18 @@ TEST_F(Free_Tests, Free_Twice_Via_Nulled_Pointer)
     // so this and the test below are only meaningful together with
     // Free_Pointer_Above_DS_Rejected using controlled offsets.
     ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pointer)), ERROR_DS_MEMORY_OUT_OF_DS);
-   }
+}
 
-   TEST_F(Free_Tests, Free_Pointer_Above_DS_Rejected)
-   {
+TEST_F(Free_Tests, Free_Pointer_Above_DS_Rejected)
+{
     // One-past-end is NOT a valid block start either.
     char *pointer = reinterpret_cast<char *>(&buf_.memory[DS_BUFFER_MEMORY_SIZE]);
 
     ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pointer)), ERROR_DS_MEMORY_OUT_OF_DS);
-   }
+}
 
-   TEST_F(Free_Tests, Free_Mid_Block_Pointer_Rejected)
-   {
+TEST_F(Free_Tests, Free_Mid_Block_Pointer_Rejected)
+{
     char *pointer = NULL;
 
     ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&pointer), 8), ERROR_DS_OK);
@@ -90,12 +87,10 @@ TEST_F(Free_Tests, Free_Twice_Via_Nulled_Pointer)
 
     // The original block must still be freeable afterwards.
     ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&pointer)), ERROR_DS_OK);
-   }
- */
+}
 
-/* TODO: Fix/implement in DS-Buffer and uncomment
-   TEST_F(Free_Tests, Free_Releases_Memory)
-   {
+TEST_F(Free_Tests, Free_Releases_Memory)
+{
     char *p = NULL;
     uint8_t usage = 0xFF;
 
@@ -104,12 +99,10 @@ TEST_F(Free_Tests, Free_Twice_Via_Nulled_Pointer)
 
     ASSERT_EQ(ds_get_memory_usage(&buf_, &usage), ERROR_DS_OK);
     ASSERT_EQ(usage, 0); // no live ALLOCATED descriptors -> 0%
-   }
- */
+}
 
-/* TODO: Fix/implement in DS-Buffer and uncomment
-   TEST_F(Free_Tests, Freed_Slot_Is_Reused)
-   {
+TEST_F(Free_Tests, Freed_Slot_Is_Reused)
+{
     char *p1 = NULL;
     char *p2 = NULL;
     char *guard = NULL;
@@ -125,12 +118,10 @@ TEST_F(Free_Tests, Free_Twice_Via_Nulled_Pointer)
     // New, smaller request must reuse the just-freed block (same address).
     ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p2), 40), ERROR_DS_OK);
     ASSERT_EQ(p2, freed_addr);
-   }
- */
+}
 
-/* TODO: Fix/implement in DS-Buffer and uncomment
-   TEST_F(Free_Tests, Real_Double_Free_Is_Rejected)
-   {
+TEST_F(Free_Tests, Real_Double_Free_Is_Rejected)
+{
     // Unlike Free_Twice_Via_Nulled_Pointer, keep an alias so the second call
     // sees a non-NULL, already-freed address — the real double-free path.
     char *p = NULL;
@@ -143,12 +134,10 @@ TEST_F(Free_Tests, Free_Twice_Via_Nulled_Pointer)
     // Pick whatever code you settle on (MEMORY_OUT_OF_DS / a dedicated one);
     // the contract is simply: a double free must NOT succeed.
     ASSERT_NE(ds_free(&buf_, reinterpret_cast<void **>(&alias)), ERROR_DS_OK);
-   }
- */
+}
 
-/* TODO: Fix/implement in DS-Buffer and uncomment
-   TEST_F(Free_Tests, Last_Block_Reclaims_Bump_Head)
-   {
+TEST_F(Free_Tests, Last_Block_Reclaims_Bump_Head)
+{
     char *p1 = NULL;
     char *p2 = NULL;
 
@@ -158,5 +147,4 @@ TEST_F(Free_Tests, Free_Twice_Via_Nulled_Pointer)
     size_t head_before = buf_.data_head;
     ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&p2)), ERROR_DS_OK);
     ASSERT_LT(buf_.data_head, head_before);
-   }
- */
+}

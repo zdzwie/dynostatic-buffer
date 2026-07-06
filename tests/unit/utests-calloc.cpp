@@ -81,11 +81,8 @@ TEST_F(Calloc_Tests, Usage_Reflects_Total_Size)
     ASSERT_EQ(usage, ExpectedUsage(AlignUp(len * elem)));
 }
 
-/* TODO: Fix/implement in DS-Buffer and uncomment (needs working ds_free with
- * block reuse). A REUSED block is dirty by definition — calloc must zero it.
- * This is the regression trap for the ds_zero(dest_size) bug in ds_calloc.
-   TEST_F(Calloc_Tests, Reused_Block_Is_Zeroed)
-   {
+TEST_F(Calloc_Tests, Reused_Block_Is_Zeroed)
+{
     uint8_t *p = NULL;
     char *guard = NULL;
     const size_t len = 16;
@@ -103,8 +100,7 @@ TEST_F(Calloc_Tests, Usage_Reflects_Total_Size)
 
     // The guard block must be untouched by calloc's zeroing.
     // (guard was never written, so verify via a written pattern instead:)
-   }
- */
+}
 
 TEST_F(Calloc_Tests, Zeroing_Does_Not_Spill_Into_Neighbour)
 {

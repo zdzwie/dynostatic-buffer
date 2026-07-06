@@ -101,10 +101,8 @@ TEST_F(Alignment_Tests, Aligned_Size_Exceeds_Remaining_Space)
     ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), 1), ERROR_DS_NO_MEMORY);
 }
 
-/* TODO: Fix/implement in DS-Buffer and uncomment (needs working ds_free with
- * block reuse — the guard pins the bump head, forcing the reuse path).
-   TEST_F(Alignment_Tests, Reused_Block_Is_Aligned)
-   {
+TEST_F(Alignment_Tests, Reused_Block_Is_Aligned)
+{
     char *p1 = NULL;
     char *p2 = NULL;
     char *guard = NULL;
@@ -118,5 +116,4 @@ TEST_F(Alignment_Tests, Aligned_Size_Exceeds_Remaining_Space)
     ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p2), 1), ERROR_DS_OK);
     ASSERT_TRUE(IsAligned(p2));
     ASSERT_EQ(p2, original);
-   }
- */
+}
