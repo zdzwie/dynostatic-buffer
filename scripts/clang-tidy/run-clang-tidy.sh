@@ -20,7 +20,7 @@ compile_db="${build_dir}/compile_commands.json"
 # unversioned name and fall back to a known versioned one.
 clang_tidy="${CLANG_TIDY:-}"
 if [[ -z "${clang_tidy}" ]]; then
-    for candidate in clang-tidy clang-tidy-18; do
+    for candidate in clang-tidy clang-tidy-22; do
         if command -v "${candidate}" >/dev/null 2>&1; then
             clang_tidy="${candidate}"
             break
