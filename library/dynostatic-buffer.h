@@ -123,6 +123,7 @@ typedef struct {
  *
  * @retval ERROR_DS_OK Dynostatic-buffer is properly initialized.
  * @retval ERROR_DS_INVALID_ARG Some given parameter is incorrect.
+ * @retval ERROR_DS_ALREADY_INIT Dynostatic-buffer was already initialized and cannot be initialized again.
  */
 ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer);
 
@@ -183,7 +184,10 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
  * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
  * @retval ERROR_DS_NO_MEMORY There is not enough free memory to reallocate demanded block.
+ * @retval ERROR_DS_NO_ALLOCATORS There is no free allocators when a new block is allocated (previous pointer is NULL).
  * @retval ERROR_DS_TOO_BIG_CHUNK Demanded size of memory block is bigger than configured max size.
+ * @retval ERROR_DS_MEMORY_OUT_OF_DS Given pointer is not from dynostatic-buffer when it is freed (size == 0).
+ * @retval ERROR_DS_CRITICAL_ERR Resizing an already allocated block is not yet implemented.
  */
 ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size);
 
