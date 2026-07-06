@@ -122,7 +122,7 @@ typedef enum {
 } ds_allocator_status_t;
 
 /**
- * @typedef ds_allocator_t
+ * @struct ds_allocator_t
  * @brief Bookkeeping record describing one memory block within the buffer.
  *
  * Lifecycle of a record:
@@ -166,7 +166,7 @@ typedef struct {
 } ds_allocator_t;
 
 /**
- * @typedef dynostatic_buffer_t
+ * @struct dynostatic_buffer_t
  * @brief Self-contained allocator instance emulating dynamic allocation
  *        inside a caller-provided static buffer — no heap, no globals.
  *
@@ -199,7 +199,7 @@ typedef struct {
     uint16_t init_magic;    /**< Equals DS_MAGIC_NUMBER while the instance is
                                  initialized; any other value means
                                  uninitialized. Requires the structure to be
-                                 zeroed before first init (see @warning). */
+                                 zeroed before first init (see warning). */
     size_t data_head;       /**< Bump pointer: offset of the first byte of
                                  never-touched (or reclaimed) space in memory.
                                  Always in [0, DS_BUFFER_MEMORY_SIZE]. Equal to
