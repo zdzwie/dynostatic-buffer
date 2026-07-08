@@ -37,6 +37,25 @@
 static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero);
 
 /**
+ * @brief Perform bounds-guarded memory copy between non-overlapping regions.
+ *
+ * Centralizes the single sanctioned use of memcpy so that any analyzer
+ * suppressions (clang-tidy insecureAPI today, future MISRA deviations)
+ * live in exactly one place.
+ *
+ * @pre Regions must not overlap (memcpy semantics); callers guarantee this
+ *      structurally — distinct allocator blocks never alias.
+ *
+ * @param[out] p_dest Destination memory.
+ * @param[in] dest_size Guaranteed writable size of the destination — the
+ *                      lower bound known to the caller, not necessarily the
+ *                      block's full capacity.
+ * @param[in] p_src Source memory.
+ * @param[in] size_to_copy Number of bytes to copy.
+ */
+static inline void ds_memcpy(void *p_dest, size_t dest_size, const void *p_src, size_t size_to_copy);
+
+/**
  * @brief Get new allocator for dynostatic-buffer.
  *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
@@ -98,6 +117,17 @@ static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero)
     DS_ASSERT(size_to_zero <= dest_size); /* the destination-size_to_zero guard memset_s adds */
 
     (void)memset(p_dest, 0u, size_to_zero); /* NOLINT(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) */
+
+    (void)dest_size;
+}
+
+static inline void ds_memcpy(void *p_dest, size_t dest_size, const void *p_src, size_t size_to_copy)
+{
+    DS_ASSERT(p_dest != NULL);
+    DS_ASSERT(p_src != NULL);
+    DS_ASSERT(size_to_copy <= dest_size); /* the destination-size guard memcpy_s adds */
+
+    (void)memcpy(p_dest, p_src, size_to_copy); /* NOLINT(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) */
 
     (void)dest_size;
 }
@@ -311,11 +341,11 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
 
 ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size)
 {
-    if ((NULL == p_ds_buffer) || (p_memory == NULL)) {
+    if ((NULL == p_ds_buffer) || (NULL == p_memory)) {
         return ERROR_DS_INVALID_ARG;
     }
 
-    if ((p_ds_buffer->init_magic != DS_MAGIC_NUMBER)) {
+    if (DS_MAGIC_NUMBER != p_ds_buffer->init_magic) {
         return ERROR_DS_NO_INIT;
     }
 
@@ -327,8 +357,47 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
         return ds_malloc(p_ds_buffer, p_memory, size);
     }
 
-    // TODO: Finish implementation
-    return ERROR_DS_CRITICAL_ERR;
+    if (size > DS_MAX_ALLOCATION_SIZE) {
+        return ERROR_DS_TOO_BIG_CHUNK;
+    }
+
+    size_t alloc_idx;
+    ds_err_code_t ret = ds_find_allocator_for_memory(p_ds_buffer, *p_memory, &alloc_idx);
+    if (ret != ERROR_DS_OK) {
+        return ret; /* OUT_OF_DS / ALLOCATOR_NOT_FOUND — original contract bug fixed */
+    }
+
+    const size_t head = p_ds_buffer->allocators[alloc_idx].head;
+    const size_t capacity = p_ds_buffer->allocators[alloc_idx].size;
+    const size_t aligned_size = ds_align_up(size);
+
+    if (aligned_size <= capacity) {
+        return ERROR_DS_OK; /* shrink or fit: in place, capacity retained (no split) */
+    }
+
+    /* Trailing-block fast path: grow in place by advancing the bump head. */
+    if (((head + capacity) == p_ds_buffer->data_head)
+        && ((DS_BUFFER_MEMORY_SIZE - head) >= aligned_size)) {
+        p_ds_buffer->data_head = head + aligned_size;
+        p_ds_buffer->allocators[alloc_idx].size = aligned_size;
+        return ERROR_DS_OK;
+    }
+
+    /* Move path: allocate FIRST, so any failure leaves the original intact. */
+    void *p_new = NULL;
+    ret = ds_malloc(p_ds_buffer, &p_new, size);
+    if (ret != ERROR_DS_OK) {
+        return ret;
+    }
+
+    ds_memcpy(p_new, size, *p_memory, capacity);
+
+    ret = ds_free(p_ds_buffer, p_memory); /* zeroes old block under DS_ZERO_ON_FREE; may cascade */
+    DS_ASSERT(ret == ERROR_DS_OK);
+    (void)ret;
+
+    *p_memory = p_new;
+    return ERROR_DS_OK;
 }
 
 ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_memory_usage)
