@@ -13,13 +13,27 @@ jobs:
   lint:
     name: Static analysis & formatting
     runs-on: ubuntu-latest
-    container: silkeh/clang:22
+    container: ubuntu:24.04
+    env:
+      LLVM_VERSION: "22"
+      CC: clang-22
+      CXX: clang++-22
     steps:
-      - uses: actions/checkout@v4
-      - name: Install tools
+      - name: Install base tools
         run: |
           apt-get update
-          apt-get install -y cppcheck python3 python3-pip python3-venv
+          apt-get install -y --no-install-recommends \
+            ca-certificates wget gnupg lsb-release software-properties-common \
+            git cmake cppcheck python3 python3-pip python3-venv
+
+      - name: Install Clang/LLVM from apt.llvm.org
+        run: |
+          wget -qO llvm.sh https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          ./llvm.sh "${LLVM_VERSION}" all
+          rm llvm.sh
+
+      - uses: actions/checkout@v4
 
       - name: Run pre-commit
         run: |
