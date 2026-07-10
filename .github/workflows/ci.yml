@@ -13,20 +13,19 @@ jobs:
   lint:
     name: Static analysis & formatting
     runs-on: ubuntu-latest
+    container: silkeh/clang:22
     steps:
       - uses: actions/checkout@v4
-
       - name: Install tools
         run: |
-          sudo apt-get update && sudo apt-get install -y cppcheck
-          sudo ./llvm.sh 22
-          sudo apt-get install -y clang-tidy-22
+          apt-get update
+          apt-get install -y cppcheck python3 python3-pip python3-venv
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - uses: pre-commit/action@v3.0.1
+      - name: Run pre-commit
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          pip install --break-system-packages pre-commit
+          pre-commit run --all-files --show-diff-on-failure --color=always
 
   build-example:
     name: Build example
