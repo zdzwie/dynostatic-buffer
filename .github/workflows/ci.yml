@@ -24,7 +24,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             ca-certificates wget gnupg lsb-release software-properties-common \
-            git cmake cppcheck python3 python3-pip python3-venv
+            git cmake make cppcheck python3 python3-pip python3-venv
 
       - name: Install Clang/LLVM from apt.llvm.org
         run: |
