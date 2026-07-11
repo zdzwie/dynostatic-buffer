@@ -11,7 +11,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <stdbool.h>
 #include <stdalign.h>
 
 #ifdef __cplusplus
@@ -311,32 +310,60 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
  * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
  * @retval ERROR_DS_CRITICAL_ERR More than available memory allocated.
  */
-ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_memory_usage);
+ds_err_code_t ds_get_memory_usage(const dynostatic_buffer_t *p_ds_buffer, uint8_t *p_memory_usage);
 
 /**
- * @brief Get size of maximal memory chunk, which could be allocated.
+ * @brief Get the largest allocation size that would succeed right now.
+ *
+ * Returns the maximal @p size for which an immediate ds_malloc() call on
+ * this instance would return ERROR_DS_OK. Both allocation paths are
+ * considered: reuse of the largest parked DS_FREE block and a fresh bump
+ * allocation (clamped to DS_MAX_ALLOCATION_SIZE and to the aligned usable
+ * remainder — an unaligned buffer tail is excluded as unallocatable).
+ *
+ * A result of 0 means no allocation of any size can currently succeed —
+ * either the memory or the allocator slots are exhausted; use
+ * ds_get_free_allocator_cnt() and ds_get_memory_usage() to tell which.
+ *
+ * @note The value is a snapshot: it is guaranteed only until the next call
+ *       that mutates this instance (ds_malloc/ds_calloc/ds_realloc/ds_free).
  *
  * @param[in] p_ds_buffer Pointer to dynostatic-buffer structure.
- * @param[out] p_max_new_allocation Pointer to variable, where max size will be written.
+ * @param[out] p_max_new_allocation Largest currently satisfiable allocation
+ *                                  size in bytes; 0 when nothing can be
+ *                                  allocated.
  *
- * @retval ERROR_DS_OK Max size of new allocation is properly read.
+ * @retval ERROR_DS_OK Value successfully computed and written.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
- * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
+ * @retval ERROR_DS_INVALID_ARG p_ds_buffer or p_max_new_allocation is NULL.
  */
-ds_err_code_t ds_get_max_new_allocation_size(dynostatic_buffer_t *p_ds_buffer, size_t *p_max_new_allocation);
+ds_err_code_t ds_get_max_new_allocation_size(const dynostatic_buffer_t *p_ds_buffer, size_t *p_max_new_allocation);
 
 /**
- * @brief Check how many new allocation could be made in dynostatic-buffer.
+ * @brief Get the number of allocator slots not holding a live block.
+ *
+ * Counts slots in DS_NOT_USED or DS_FREE state — an UPPER BOUND on how many
+ * additional concurrent allocations this instance can hold, NOT a guarantee
+ * that any particular allocation will succeed: parked DS_FREE slots serve
+ * only requests fitting their retained capacity, and every allocation is
+ * further subject to available memory (see
+ * ds_get_max_new_allocation_size() for a success-oriented view).
+ *
+ * A result of 0 means ds_malloc() is guaranteed to fail with
+ * ERROR_DS_NO_ALLOCATORS regardless of the requested size.
+ *
+ * @note The value is a snapshot: it is guaranteed only until the next call
+ *       that mutates this instance.
  *
  * @param[in] p_ds_buffer Pointer to dynostatic-buffer structure.
- * @param[out] p_free_allocators Pointer to variable, where free allocators count will be written.
+ * @param[out] p_free_allocators Number of slots available for new
+ *                               allocations (0..DS_MAX_ALLOCATION_COUNT).
  *
- * @retval ERROR_DS_OK Free allocator size is properly read.
+ * @retval ERROR_DS_OK Value successfully computed and written.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
- * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
- * @retval ERROR_DS_CRITICAL_ERR Used more allocators than is enabled.
+ * @retval ERROR_DS_INVALID_ARG p_ds_buffer or p_free_allocators is NULL.
  */
-ds_err_code_t ds_get_free_allocator_cnt(dynostatic_buffer_t *p_ds_buffer, size_t *p_free_allocators);
+ds_err_code_t ds_get_free_allocator_cnt(const dynostatic_buffer_t *p_ds_buffer, size_t *p_free_allocators);
 
 /**
  * @brief Deinitialize dynostatic-buffer.
