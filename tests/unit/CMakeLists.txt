@@ -22,6 +22,7 @@ add_executable( ds_tests
                 utests-calloc.cpp
                 utests-realloc.cpp
                 utests-memory-usage.cpp
+                utests-getters.cpp
 )
 
 target_link_libraries(ds_tests PRIVATE

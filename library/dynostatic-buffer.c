@@ -400,7 +400,7 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
     return ERROR_DS_OK;
 }
 
-ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_memory_usage)
+ds_err_code_t ds_get_memory_usage(const dynostatic_buffer_t *p_ds_buffer, uint8_t *p_memory_usage)
 {
     size_t usage = 0;
     if ((NULL == p_ds_buffer) || (p_memory_usage == NULL)) {
@@ -423,6 +423,66 @@ ds_err_code_t ds_get_memory_usage(dynostatic_buffer_t *p_ds_buffer, uint8_t *p_m
     }
 
     *p_memory_usage = (uint8_t)((100u * usage) / DS_BUFFER_MEMORY_SIZE);
+    return ERROR_DS_OK;
+}
+
+ds_err_code_t ds_get_max_new_allocation_size(const dynostatic_buffer_t *p_ds_buffer, size_t *p_max_new_allocation)
+{
+    if ((NULL == p_ds_buffer) || (NULL == p_max_new_allocation)) {
+        return ERROR_DS_INVALID_ARG;
+    }
+
+    if (DS_MAGIC_NUMBER != p_ds_buffer->init_magic) {
+        return ERROR_DS_NO_INIT;
+    }
+
+    size_t max_size = 0u;
+
+    if (p_ds_buffer->used_allocators < DS_MAX_ALLOCATION_COUNT) {
+        bool bump_slot_available = false;
+
+        /* Reuse candidate: the largest parked DS_FREE capacity.
+         * Bump candidate exists only if a DS_NOT_USED slot does. */
+        for (size_t iter = 0u; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
+            const ds_allocator_status_t status = p_ds_buffer->allocators[iter].allocation_status;
+            if (status == DS_NOT_USED) {
+                bump_slot_available = true;
+                break; /* compact prefix: nothing lives past this point */
+            }
+            if ((status == DS_FREE) && (p_ds_buffer->allocators[iter].size > max_size)) {
+                max_size = p_ds_buffer->allocators[iter].size;
+            }
+        }
+
+        if (bump_slot_available) {
+            const size_t remaining = DS_BUFFER_MEMORY_SIZE - p_ds_buffer->data_head;
+            /* data_head is alignment-multiple, so only an unaligned buffer
+             * tail can make `remaining` unaligned; that tail is unusable. */
+            size_t bump_max = remaining - (remaining % DS_ALIGNMENT);
+            if (bump_max > DS_MAX_ALLOCATION_SIZE) {
+                bump_max = DS_MAX_ALLOCATION_SIZE;
+            }
+            if (bump_max > max_size) {
+                max_size = bump_max;
+            }
+        }
+    }
+
+    *p_max_new_allocation = max_size;
+    return ERROR_DS_OK;
+}
+
+ds_err_code_t ds_get_free_allocator_cnt(const dynostatic_buffer_t *p_ds_buffer, size_t *p_free_allocators)
+{
+    if ((NULL == p_ds_buffer) || (NULL == p_free_allocators)) {
+        return ERROR_DS_INVALID_ARG;
+    }
+
+    if (DS_MAGIC_NUMBER != p_ds_buffer->init_magic) {
+        return ERROR_DS_NO_INIT;
+    }
+
+    *p_free_allocators = DS_MAX_ALLOCATION_COUNT - p_ds_buffer->used_allocators;
     return ERROR_DS_OK;
 }
 
