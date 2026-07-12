@@ -67,6 +67,7 @@ extern "C" {
     #define DS_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
 #endif
 
+/** @cond DOXYGEN_SHOULD_SKIP_THIS */
 DS_STATIC_ASSERT((DS_ALIGNMENT & (DS_ALIGNMENT - 1u)) == 0u, "DS_ALIGNMENT must be a power of two");
 DS_STATIC_ASSERT(DS_ALIGNMENT >= alignof(uint32_t), "DS_ALIGNMENT must at least satisfy 32-bit types");
 DS_STATIC_ASSERT(DS_ALIGNMENT <= alignof(max_align_t), "DS_ALIGNMENT exceeds the strictest fundamental alignment");
@@ -78,6 +79,7 @@ DS_STATIC_ASSERT((DS_MAX_ALLOCATION_SIZE % DS_ALIGNMENT) == 0u, "DS_MAX_ALLOCATI
 /* Overflow guard for ds_align_up (discussed at #7 — closes the implicit
      * size + (DS_ALIGNMENT - 1) wraparound relationship for free): */
 DS_STATIC_ASSERT(DS_MAX_ALLOCATION_SIZE <= (SIZE_MAX - DS_ALIGNMENT) + 1u, "ds_align_up may overflow for sizes near SIZE_MAX");
+/** @endcond */
 
 /*---------------Types----------------*/
 
@@ -232,7 +234,7 @@ typedef struct {
  * is allocatable.
  *
  * @pre The structure must be zero-initialized before the FIRST call (see
- *      the @warning at dynostatic_buffer_t) — garbage content may spuriously
+ *      the warning at dynostatic_buffer_t) — garbage content may spuriously
  *      read as already initialized.
  *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
