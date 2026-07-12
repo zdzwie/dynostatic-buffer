@@ -28,11 +28,23 @@
 /*-----Static-Function-Prototypes-----*/
 
 /**
- * @brief Perform secure memset with zeros of memory.
+ * @brief Zero a memory region with an explicit destination-size guard.
  *
- * @param[in, out] p_dest Pointer to memory, which will be filled with given value.
- * @param[in] dest_size Size of memory, which should be set.
- * @param[in] size_to_zero Size of memory, which should be filled with zeros.
+ * Mirrors the memset_s(dest, dest_size, 0, count) shape: the caller states
+ * how much writable space the destination has, and the guard rejects any
+ * attempt to zero beyond it. Centralizes the single sanctioned use of
+ * memset so analyzer suppressions live in exactly one place (ds_memcpy is
+ * the copying counterpart).
+ *
+ * @pre p_dest != NULL and size_to_zero <= dest_size — enforced by DS_ASSERT
+ *      only: caught in debug builds, undefined behaviour once NDEBUG strips
+ *      the asserts.
+ *
+ * @param[out] p_dest Memory to zero.
+ * @param[in] dest_size Guaranteed writable size of the destination — the
+ *                      lower bound known to the caller, not necessarily the
+ *                      region's full capacity.
+ * @param[in] size_to_zero Number of bytes to set to zero.
  */
 static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero);
 
@@ -56,37 +68,87 @@ static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero);
 static inline void ds_memcpy(void *p_dest, size_t dest_size, const void *p_src, size_t size_to_copy);
 
 /**
- * @brief Get new allocator for dynostatic-buffer.
+ * @brief Assign an allocator record and a memory region for a new block.
+ *
+ * Serves the request reuse-first: scans touched records for a parked
+ * DS_FREE block whose capacity fits the ALIGNED size, and only then falls
+ * back to a fresh bump allocation at data_head. In both paths the record
+ * is marked DS_ALLOCATED, used_allocators is incremented, and *p_alloc_idx
+ * receives the record's index. A reused record KEEPS its original capacity;
+ * a fresh record gets capacity ds_align_up(size). The scan stops at the
+ * first DS_NOT_USED record (compact-prefix invariant, see ds_allocator_t).
+ *
+ * @pre p_ds_buffer and p_alloc_idx are non-NULL; the instance is
+ *      initialized; size passed the public ds_malloc validation — the
+ *      internal size re-check is defensive only and unreachable through
+ *      the public API.
  *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
- * @param[in] size Size of memory chunk which will be allocated.
- * @param[out] p_alloc_idx Pointer to variable, where index of new allocator will be saved.
+ * @param[in] size Requested size in bytes (raw; alignment is applied here).
+ * @param[out] p_alloc_idx Index of the assigned record; written only on
+ *                         ERROR_DS_OK.
  *
- * @retval ERROR_DS_OK Memory is properly allocated in dynostatic-buffer.
- * @retval ERROR_DS_NO_MEMORY There is not enough free memory to allocate demanded memory chunk.
- * @retval ERROR_DS_NO_ALLOCATORS There is not enough free allocators to use.
- * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
+ * @retval ERROR_DS_OK Record assigned; *p_alloc_idx identifies it.
+ * @retval ERROR_DS_INVALID_ARG Defensive size re-check failed (dead branch
+ *                              through the public API).
+ * @retval ERROR_DS_NO_ALLOCATORS Either DS_MAX_ALLOCATION_COUNT blocks are
+ *                                already live, or every record is occupied
+ *                                (live, or parked with too small a
+ *                                capacity) and no DS_NOT_USED slot remains
+ *                                for a bump allocation.
+ * @retval ERROR_DS_NO_MEMORY A record is available but the bump space
+ *                            cannot hold the aligned size.
  */
 static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size, size_t *p_alloc_idx);
 
 /**
- * @brief Get allocator matched to given pointer.
+ * @brief Find the allocator record whose live block starts at @p p_memory.
  *
- * @param p_ds_buffer Pointer to dynostatic-buffer structure.
- * @param p_memory Pointer to memory, which allocator should be found.
- * @param p_alloc_idx Pointer to variable, where index of found allocator will be saved.
+ * Reduces the pointer to an arena offset and matches it against the head
+ * of DS_ALLOCATED records. Only exact block starts match: interior
+ * pointers, parked DS_FREE blocks and reclaimed addresses do not. The scan
+ * stops at the first DS_NOT_USED record (compact-prefix invariant, see
+ * ds_allocator_t). The two failure codes are deliberately diagnostic:
+ * outside the arena (foreign pointer, likely an application logic bug)
+ * versus inside but not a live block start (double free or pointer
+ * arithmetic gone wrong).
  *
- * @retval ERROR_DS_OK Allocator is properly found.
+ * This function owns the project's MISRA 11.4/11.6 deviations: integer
+ * comparison of addresses is the defined-behaviour alternative to a
+ * relational comparison of unrelated pointers.
  *
+ * @pre p_ds_buffer and p_alloc_idx are non-NULL; the instance is
+ *      initialized. p_memory may hold ANY value — NULL, garbage, a stale
+ *      alias — all safely fail the range or match checks (relied upon by
+ *      the ds_malloc PTR_ALLOC_YET pre-check).
+ *
+ * @param[in] p_ds_buffer Pointer to dynostatic-buffer structure.
+ * @param[in] p_memory Address to look up.
+ * @param[out] p_alloc_idx Index of the matching record; written only on
+ *                         ERROR_DS_OK.
+ *
+ * @retval ERROR_DS_OK Live block found; *p_alloc_idx identifies its record.
+ * @retval ERROR_DS_MEMORY_OUT_OF_DS p_memory lies outside this instance's
+ *                                   arena.
+ * @retval ERROR_DS_ALLOCATOR_NOT_FOUND p_memory is inside the arena but is
+ *                                      not the start of a live block.
  */
 static ds_err_code_t ds_find_allocator_for_memory(const dynostatic_buffer_t *p_ds_buffer, void *p_memory, size_t *p_alloc_idx);
 
 /**
- * @brief Align size up to the nearest multiple of alignment.
+ * @brief Round @p size up to the nearest multiple of DS_ALIGNMENT.
  *
- * @param[in] size Size to be aligned.
+ * Power-of-two mask arithmetic — (size + mask) & ~mask — with every operand
+ * in size_t from the first operation (MISRA 10.7). Returns size unchanged
+ * when it is already a multiple of DS_ALIGNMENT.
  *
- * @return Aligned size.
+ * @pre size <= DS_MAX_ALLOCATION_SIZE: together with the header's
+ *      DS_STATIC_ASSERT (DS_MAX_ALLOCATION_SIZE <= SIZE_MAX - DS_ALIGNMENT
+ *      + 1) this makes the internal addition overflow-free.
+ *
+ * @param[in] size Size in bytes to align.
+ *
+ * @return The smallest multiple of DS_ALIGNMENT that is >= size.
  */
 static inline size_t ds_align_up(size_t size);
 
@@ -99,6 +161,10 @@ static inline size_t ds_align_up(size_t size);
  * at the highest touched index; (b) touched slots form a gapless partition
  * of [0, data_head), so after reclaiming slot idx the block ending exactly
  * at the new data_head is always slot idx - 1.
+ *
+ * @note Does NOT modify used_allocators: cascaded DS_FREE records were
+ *       already discounted at their own ds_free; the caller decrements
+ *       exactly once, for the block currently being freed.
  *
  * @pre allocators[alloc_idx] is the trailing block (head + size == data_head).
  * @pre Block contents were already zeroed by their respective ds_free calls

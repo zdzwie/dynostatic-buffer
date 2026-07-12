@@ -225,90 +225,170 @@ typedef struct {
 /*-----Public-Function-Declaration----*/
 
 /**
- * @brief Initialize allocation buffer
+ * @brief Initialize an allocator instance over its embedded arena.
+ *
+ * Zeroes the arena and all allocator records, resets the bump head, and
+ * arms the init_magic marker. After success the full DS_BUFFER_MEMORY_SIZE
+ * is allocatable.
+ *
+ * @pre The structure must be zero-initialized before the FIRST call (see
+ *      the @warning at dynostatic_buffer_t) — garbage content may spuriously
+ *      read as already initialized.
  *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
  *
- * @retval ERROR_DS_OK Dynostatic-buffer is properly initialized.
- * @retval ERROR_DS_INVALID_ARG Some given parameter is incorrect.
- * @retval ERROR_DS_ALREADY_INIT Dynostatic-buffer was already initialized and cannot be initialized again.
+ * @retval ERROR_DS_OK Instance initialized; the whole arena is available.
+ * @retval ERROR_DS_INVALID_ARG p_ds_buffer is NULL.
+ * @retval ERROR_DS_ALREADY_INIT Instance is already initialized; call
+ *                               ds_deinit_allocation() first to reset it.
  */
 ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer);
 
 /**
- * @brief Allocate some memory chunk in dynostatic-buffer.
+ * @brief Allocate a memory block of at least @p size bytes.
+ *
+ * The returned pointer is aligned to DS_ALIGNMENT and the block's physical
+ * capacity is @p size rounded up to DS_ALIGNMENT. The request is served
+ * either by reusing a previously freed block of sufficient capacity or by
+ * a fresh allocation from untouched space. On success *p_memory receives
+ * the block address; on any failure *p_memory is left unchanged.
+ *
+ * @pre *p_memory must be initialized before the call — NULL or a previously
+ *      obtained pointer. The function reads it to reject overwriting a
+ *      pointer to a live block (a leak guard); passing an uninitialized
+ *      value is undefined behaviour and may yield spurious
+ *      ERROR_DS_PTR_ALLOC_YET.
  *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
- * @param[out] p_memory Double pointer, to which will be saved address of allocated memory.
- * @param[in] size Size of block of memory, which will be allocated.
+ * @param[in, out] p_memory In: must not point to a live block. Out: address
+ *                          of the allocated block.
+ * @param[in] size Requested size in bytes (1..DS_MAX_ALLOCATION_SIZE).
  *
- * @retval ERROR_DS_OK Memory is properly allocated in dynostatic-buffer.
+ * @retval ERROR_DS_OK Block allocated; *p_memory points to it.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
- * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
- * @retval ERROR_DS_NO_MEMORY There is not enough free memory to allocate demanded memory chunk.
- * @retval ERROR_DS_NO_ALLOCATORS There is no free allocators. New chunk cannot be add.
- * @retval ERROR_DS_TOO_BIG_CHUNK Demanded size of chunk is bigger than configured max size.
+ * @retval ERROR_DS_INVALID_ARG p_ds_buffer or p_memory is NULL, or size is 0.
+ * @retval ERROR_DS_TOO_BIG_CHUNK size exceeds DS_MAX_ALLOCATION_SIZE.
+ * @retval ERROR_DS_PTR_ALLOC_YET *p_memory already points to a live block;
+ *                                free it first or use ds_realloc().
+ * @retval ERROR_DS_NO_ALLOCATORS All allocator records are occupied.
+ * @retval ERROR_DS_NO_MEMORY No free region can satisfy the aligned size.
  */
 ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size);
 
 /**
- * @brief Deallocate memory block in dynostatic-buffer.
+ * @brief Free a block previously obtained from this instance.
+ *
+ * Only a pointer to the START of a live block is accepted — interior
+ * pointers, foreign pointers, and already-freed addresses are rejected
+ * without touching any state. When DS_ZERO_ON_FREE is enabled (default),
+ * the block's full capacity is zeroed before release. A freed trailing
+ * block is reclaimed immediately (including a cascade through adjacent
+ * freed blocks), making the space available to allocations of any size;
+ * a freed interior block is parked for reuse by requests fitting its
+ * capacity. On success *p_memory is set to NULL.
  *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
- * @param[in, out] p_memory Memory block to deallocate.
+ * @param[in, out] p_memory In: address of a live block. Out: NULL on success,
+ *                          unchanged on failure.
  *
- * @retval ERROR_DS_OK Memory is properly deallocated.
+ * @retval ERROR_DS_OK Block released; *p_memory is now NULL.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
- * @retval ERROR_DS_INVALID_ARG Given parameter is invalid.
- * @retval ERROR_DS_MEMORY_OUT_OF_DS Pointer given to deallocate is not allocate in dynostatic-buffer.
+ * @retval ERROR_DS_INVALID_ARG p_ds_buffer, p_memory or *p_memory is NULL.
+ * @retval ERROR_DS_MEMORY_OUT_OF_DS *p_memory lies outside this instance's
+ *                                   arena.
+ * @retval ERROR_DS_ALLOCATOR_NOT_FOUND *p_memory is inside the arena but is
+ *                                      not the start of a live block —
+ *                                      typically a double free or an
+ *                                      interior pointer.
  */
 ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory);
 
 /**
- * @brief Allocate array of elements of given size and fill it by zeros.
+ * @brief Allocate a zero-filled array of @p len elements of @p size_of_elem
+ *        bytes each.
+ *
+ * Equivalent to ds_malloc(len * size_of_elem) followed by zeroing the
+ * requested bytes. The zero fill is unconditional — it does NOT depend on
+ * DS_ZERO_ON_FREE. The multiplication is checked for overflow. Inherits
+ * the ds_malloc() precondition on *p_memory (see ERROR_DS_PTR_ALLOC_YET).
  *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
- * @param[out] p_memory Double pointer, to which will be saved pointer to allocated array.
- * @param[in] len Len of array to allocate.
- * @param[in] size_of_elem Size of one element of array.
+ * @param[in, out] p_memory In: must not point to a live block. Out: address
+ *                          of the zeroed array.
+ * @param[in] len Number of elements; must not be 0.
+ * @param[in] size_of_elem Size of one element in bytes; must not be 0.
  *
- * @retval ERROR_DS_OK Array is properly allocated in dynostatic-buffer.
+ * @retval ERROR_DS_OK Array allocated and zeroed.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
- * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
- * @retval ERROR_DS_NO_MEMORY There is not enough free memory to allocate demanded array.
- * @retval ERROR_DS_NO_ALLOCATORS There is no free allocators. New array cannot be add.
- * @retval ERROR_DS_TOO_BIG_CHUNK Demanded size of array is bigger than configured max size.
+ * @retval ERROR_DS_INVALID_ARG NULL arguments, zero len/size_of_elem, or
+ *                              len * size_of_elem overflows size_t.
+ * @retval ERROR_DS_TOO_BIG_CHUNK Total size exceeds DS_MAX_ALLOCATION_SIZE.
+ * @retval ERROR_DS_PTR_ALLOC_YET *p_memory already points to a live block.
+ * @retval ERROR_DS_NO_ALLOCATORS All allocator records are occupied.
+ * @retval ERROR_DS_NO_MEMORY No free region can satisfy the aligned size.
  */
 ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t len, size_t size_of_elem);
 
 /**
- * @brief Reallocate given memory block to new size. If given pointer is not dynostatic-buffer new memory block will be allocated.
+ * @brief Resize a block, preserving its contents up to the smaller of the
+ *        old and new sizes.
+ *
+ * Semantics follow C realloc with explicit deviations:
+ * - size == 0: equivalent to ds_free(p_memory).
+ * - *p_memory == NULL: equivalent to ds_malloc(size).
+ * - Shrink (new aligned size fits the block's capacity): in place, pointer
+ *   unchanged, capacity RETAINED (no split; ds_get_memory_usage() keeps
+ *   reporting the original capacity).
+ * - Grow of the most recently placed block: extended in place when space
+ *   allows — pointer unchanged, no copy.
+ * - Grow otherwise: a new block is allocated, contents are copied, the old
+ *   block is freed (zeroed under DS_ZERO_ON_FREE). Requires a free
+ *   allocator record for the transient old+new pair. Bytes beyond the old
+ *   size have indeterminate values.
+ * - A pointer that is not the start of a live block is REJECTED — unlike
+ *   C realloc's undefined behaviour, and no new block is allocated.
+ *
+ * On any failure the original block and *p_memory are left fully intact.
  *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
- * @param[out] p_memory Double pointer, to which will be reallocated. If pointer is not dynostatic-buffer new memory block will be allocated.
- * @param[in] size New size of memory to reallocate.
+ * @param[in, out] p_memory In: NULL or address of a live block. Out: address
+ *                          of the resized block (may differ from the input),
+ *                          NULL after size == 0, unchanged on failure.
+ * @param[in] size New size in bytes (0..DS_MAX_ALLOCATION_SIZE).
  *
- * @retval ERROR_DS_OK Memory block is properly reallocated in dynostatic-buffer.
+ * @retval ERROR_DS_OK Operation completed as described above.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
- * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
- * @retval ERROR_DS_NO_MEMORY There is not enough free memory to reallocate demanded block.
- * @retval ERROR_DS_NO_ALLOCATORS There is no free allocators when a new block is allocated (previous pointer is NULL).
- * @retval ERROR_DS_TOO_BIG_CHUNK Demanded size of memory block is bigger than configured max size.
- * @retval ERROR_DS_MEMORY_OUT_OF_DS Given pointer is not from dynostatic-buffer when it is freed (size == 0).
- * @retval ERROR_DS_CRITICAL_ERR Resizing an already allocated block is not yet implemented.
+ * @retval ERROR_DS_INVALID_ARG p_ds_buffer or p_memory is NULL (or, for
+ *                              size == 0, *p_memory is NULL).
+ * @retval ERROR_DS_TOO_BIG_CHUNK size exceeds DS_MAX_ALLOCATION_SIZE.
+ * @retval ERROR_DS_MEMORY_OUT_OF_DS *p_memory lies outside this instance's
+ *                                   arena.
+ * @retval ERROR_DS_ALLOCATOR_NOT_FOUND *p_memory is not the start of a live
+ *                                      block (double free / interior pointer).
+ * @retval ERROR_DS_NO_ALLOCATORS No free record for the moved block.
+ * @retval ERROR_DS_NO_MEMORY No region can hold the grown block.
  */
 ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size);
 
 /**
- * @brief Get usage of memory allocated for dynostatic-buffer in %.
+ * @brief Get the arena occupancy as a percentage (0..100, rounded down).
+ *
+ * Sums the PHYSICAL CAPACITIES of live blocks — sizes rounded up to
+ * DS_ALIGNMENT and retained across reuse and shrinking — so the result may
+ * exceed the sum of requested sizes. Parked freed blocks count as free.
+ * 0 means no live blocks; 100 means the arena is fully occupied by live
+ * blocks.
+ *
+ * @note Snapshot semantics: valid only until the next mutating call.
  *
  * @param[in] p_ds_buffer Pointer to dynostatic-buffer structure.
- * @param[out] p_memory_usage Pointer to variable where memory usage will be saved.
+ * @param[out] p_memory_usage Occupancy percentage (0..100).
  *
- * @retval ERROR_DS_OK Memory usage is properly read.
+ * @retval ERROR_DS_OK Value successfully computed and written.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
- * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
- * @retval ERROR_DS_CRITICAL_ERR More than available memory allocated.
+ * @retval ERROR_DS_INVALID_ARG p_ds_buffer or p_memory_usage is NULL.
+ * @retval ERROR_DS_CRITICAL_ERR Internal state corrupted: live capacities
+ *                               exceed the arena size (writes 0).
  */
 ds_err_code_t ds_get_memory_usage(const dynostatic_buffer_t *p_ds_buffer, uint8_t *p_memory_usage);
 
