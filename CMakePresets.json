@@ -13,6 +13,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "DS_BUILD_TESTS": "ON",
+        "DS_ZERO_ON_FREE": "ON",
         "BUILD_DOC": "OFF"
       }
     },
@@ -33,6 +34,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "DS_BUILD_TESTS": "ON",
+        "DS_ZERO_ON_FREE": "ON",
         "BUILD_DOC": "OFF",
         "CMAKE_C_FLAGS": "--coverage -O0 -g",
         "CMAKE_CXX_FLAGS": "--coverage -O0 -g",

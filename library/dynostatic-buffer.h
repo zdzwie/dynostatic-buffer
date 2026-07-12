@@ -41,8 +41,12 @@ extern "C" {
     #define DS_BUFFER_MEMORY_SIZE 1024u /**< Size of buffer prepared for dynostatic-buffer. */
 #endif
 
-#ifndef DS_LOG_ENABLE           /**< If You not use CMake and KConfig. */
-    #define DS_LOG_ENABLE false /**< Enable or disable logging from dynostatic-buffer. */
+#ifndef DS_LOG_ENABLE        /**< If You not use CMake and KConfig. */
+    #define DS_LOG_ENABLE 0u /**< Enable or disable logging from dynostatic-buffer. */
+#endif
+
+#ifndef DS_ZERO_ON_FREE        /**< If You not use CMake and KConfig. */
+    #define DS_ZERO_ON_FREE 0u /**< Zero the contents of freed blocks in dynostatic-buffer. */
 #endif
 
 #ifndef DS_MAX_ALLOCATION_COUNT         /**< If You not use CMake and KConfig. */
@@ -55,10 +59,6 @@ extern "C" {
 
 #ifndef DS_ALIGNMENT
     #define DS_ALIGNMENT (4u) /**< Alignment for memory allocations. */
-#endif
-
-#ifndef DS_ZERO_ON_FREE        /**< If You not use CMake and KConfig. */
-    #define DS_ZERO_ON_FREE 1u /**< Zero freed memory before releasing the block (security/cost trade-off). */
 #endif
 
 #ifdef __cplusplus
