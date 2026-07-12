@@ -298,9 +298,10 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
         return ret;
     }
 
-#ifdef DS_ZERO_ON_FREE
     const size_t head = p_ds_buffer->allocators[alloc_idx].head;
     const size_t size = p_ds_buffer->allocators[alloc_idx].size;
+
+#if DS_ZERO_ON_FREE == 0u
     ds_zero(&p_ds_buffer->memory[head], DS_BUFFER_MEMORY_SIZE - head, size);
 #endif
 
@@ -335,7 +336,7 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
         return ret;
     }
 
-    ds_zero(*p_memory, DS_BUFFER_MEMORY_SIZE, total_size);
+    ds_zero(*p_memory, ds_align_up(total_size), total_size);
     return ERROR_DS_OK;
 }
 
@@ -390,7 +391,7 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
         return ret;
     }
 
-    ds_memcpy(p_new, size, *p_memory, capacity);
+    ds_memcpy(p_new, aligned_size, *p_memory, capacity);
 
     ret = ds_free(p_ds_buffer, p_memory); /* zeroes old block under DS_ZERO_ON_FREE; may cascade */
     DS_ASSERT(ret == ERROR_DS_OK);
