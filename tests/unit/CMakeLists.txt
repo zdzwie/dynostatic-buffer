@@ -23,6 +23,8 @@ add_executable( ds_tests
                 utests-realloc.cpp
                 utests-memory-usage.cpp
                 utests-getters.cpp
+        utests-safe-memory-copy.cpp
+        utests-safe-memory-set.cpp
 )
 
 target_link_libraries(ds_tests PRIVATE

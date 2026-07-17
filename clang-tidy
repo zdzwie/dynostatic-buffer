@@ -29,3 +29,7 @@ WarningsAsErrors: '*'
 # are pulled in by a translation unit, while staying out of build/third-party
 # headers.
 HeaderFilterRegex: '(library|examples)/'
+
+CheckOptions:
+  - key: bugprone-easily-swappable-parameters.MinimumLength
+    value: '3'
