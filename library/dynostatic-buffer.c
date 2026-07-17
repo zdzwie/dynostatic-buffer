@@ -28,6 +28,26 @@
 /*-----Static-Function-Prototypes-----*/
 
 /**
+ * @brief Fill a memory region with a byte value, with an explicit
+ *        destination-size guard.
+ *
+ * Mirrors the memset_s(dest, dest_size, value, count) shape. Centralizes
+ * the single sanctioned use of memset so analyzer suppressions live in
+ * exactly one place; ds_zero() delegates here with value 0 and ds_memcpy()
+ * is the copying counterpart.
+ *
+ * @pre p_dest != NULL and size_to_set <= dest_size — enforced by DS_ASSERT
+ *      only: caught in debug builds, undefined behaviour once NDEBUG strips
+ *      the asserts.
+ *
+ * @param[out] p_dest Memory to fill.
+ * @param[in] dest_size Guaranteed writable size of the destination.
+ * @param[in] sign_to_set Byte value written to every position.
+ * @param[in] size_to_set Number of bytes to fill.
+ */
+static inline void ds_memset(void *p_dest, size_t dest_size, uint8_t sign_to_set, size_t size_to_set);
+
+/**
  * @brief Zero a memory region with an explicit destination-size guard.
  *
  * Mirrors the memset_s(dest, dest_size, 0, count) shape: the caller states
@@ -133,7 +153,50 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND p_memory is inside the arena but is
  *                                      not the start of a live block.
  */
-static ds_err_code_t ds_find_allocator_for_memory(const dynostatic_buffer_t *p_ds_buffer, void *p_memory, size_t *p_alloc_idx);
+static ds_err_code_t ds_find_allocator_for_memory(const dynostatic_buffer_t *p_ds_buffer, const void *p_memory, size_t *p_alloc_idx);
+
+/**
+ * @brief Find the allocator record whose live block CONTAINS @p p_memory,
+ *        and the address's offset within that block.
+ *
+ * Range-match generalization of exact-start lookup: any address inside a
+ * live block matches, with *p_offset_in_block reporting its distance from
+ * the block start (0 for the block start itself). Addresses inside parked
+ * DS_FREE blocks and in unallocated space do not match. The two failure
+ * codes are deliberately diagnostic: outside the arena versus inside but
+ * not within any live block.
+ *
+ * This function owns the project's MISRA 11.4/11.6 deviations: integer
+ * comparison of addresses is the defined-behaviour alternative to a
+ * relational comparison of unrelated pointers.
+ *
+ * RELIANCE ON INVARIANTS (see ds_allocator_t): the scan leans on the
+ * gapless-partition invariant — touched records tile [0, data_head)
+ * exactly, so once record i does not contain the offset, the offset is
+ * >= head[i] + size[i] == head[i + 1]. This makes an explicit
+ * "offset >= head" guard provably redundant (it would be an unreachable
+ * branch); if a future change (block splitting/coalescing) breaks
+ * gaplessness, this scan must be revisited.
+ *
+ * @pre p_ds_buffer, p_alloc_idx and p_offset_in_block are non-NULL; the
+ *      instance is initialized. p_memory may hold ANY value — NULL,
+ *      garbage, a stale alias — all safely fail the range or match checks.
+ *
+ * @param[in] p_ds_buffer Pointer to dynostatic-buffer structure.
+ * @param[in] p_memory Address to look up.
+ * @param[out] p_alloc_idx Index of the containing record; written only on
+ *                         ERROR_DS_OK.
+ * @param[out] p_offset_in_block Offset of p_memory from the block start;
+ *                               written only on ERROR_DS_OK.
+ *
+ * @retval ERROR_DS_OK Live block found; both out-parameters are set.
+ * @retval ERROR_DS_MEMORY_OUT_OF_DS p_memory lies outside this instance's
+ *                                   arena.
+ * @retval ERROR_DS_ALLOCATOR_NOT_FOUND p_memory is inside the arena but not
+ *                                      within any live block (parked block,
+ *                                      reclaimed or never-allocated space).
+ */
+static ds_err_code_t ds_find_allocator_containing(const dynostatic_buffer_t *p_ds_buffer, const void *p_memory, size_t *p_alloc_idx, size_t *p_offset_in_block);
 
 /**
  * @brief Round @p size up to the nearest multiple of DS_ALIGNMENT.
@@ -177,14 +240,19 @@ static void ds_reclaim_trailing(dynostatic_buffer_t *p_ds_buffer, size_t alloc_i
 
 /*---Static-Function-Implementation---*/
 
-static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero)
+static inline void ds_memset(void *p_dest, size_t dest_size, uint8_t sign_to_set, size_t size_to_set)
 {
     DS_ASSERT(p_dest != NULL);
-    DS_ASSERT(size_to_zero <= dest_size); /* the destination-size_to_zero guard memset_s adds */
+    DS_ASSERT(size_to_set <= dest_size); /* the destination-size_to_zero guard memset_s adds */
 
-    (void)memset(p_dest, 0u, size_to_zero); /* NOLINT(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) */
+    (void)memset(p_dest, sign_to_set, size_to_set); /* NOLINT(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) */
 
     (void)dest_size;
+}
+
+static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero)
+{
+    ds_memset(p_dest, dest_size, 0u, size_to_zero);
 }
 
 static inline void ds_memcpy(void *p_dest, size_t dest_size, const void *p_src, size_t size_to_copy)
@@ -251,11 +319,22 @@ static inline size_t ds_align_up(size_t size)
     return (size + mask) & ~mask;
 }
 
-static ds_err_code_t ds_find_allocator_for_memory(const dynostatic_buffer_t *p_ds_buffer, void *p_memory, size_t *p_alloc_idx)
+static ds_err_code_t ds_find_allocator_for_memory(const dynostatic_buffer_t *p_ds_buffer, const void *p_memory, size_t *p_alloc_idx)
 {
-    /* cppcheck-suppress misra-c2012-11.6 ; deviation: ... */
+    size_t offset_in_block;
+    const ds_err_code_t ret = ds_find_allocator_containing(p_ds_buffer, p_memory, p_alloc_idx, &offset_in_block);
+    if ((ERROR_DS_OK == ret) && (0u != offset_in_block)) {
+        return ERROR_DS_ALLOCATOR_NOT_FOUND; /* interior pointer: not a block start */
+    }
+    return ret;
+}
+
+static ds_err_code_t ds_find_allocator_containing(const dynostatic_buffer_t *p_ds_buffer, const void *p_memory, size_t *p_alloc_idx, size_t *p_offset_in_block)
+{
+    /* cppcheck-suppress misra-c2012-11.6 ; deviation: integer comparison is the
+     * defined-behaviour alternative to relational comparison of unrelated pointers */
     const uintptr_t addr = (uintptr_t)p_memory;
-    /* cppcheck-suppress misra-c2012-11.4 ; deviation: ... */
+    /* cppcheck-suppress misra-c2012-11.4 ; deviation: as above */
     const uintptr_t start = (uintptr_t)p_ds_buffer->memory;
 
     if ((addr < start) || ((addr - start) >= (uintptr_t)DS_BUFFER_MEMORY_SIZE)) {
@@ -265,12 +344,20 @@ static ds_err_code_t ds_find_allocator_for_memory(const dynostatic_buffer_t *p_d
     const size_t offset = (size_t)(addr - start);
 
     for (size_t iter = 0u; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
-        if (DS_NOT_USED == p_ds_buffer->allocators[iter].allocation_status) {
-            break; /* Nothing lives past the first NOT_USED */
+        const ds_allocator_status_t status = p_ds_buffer->allocators[iter].allocation_status;
+
+        if (DS_NOT_USED == status) {
+            break;
         }
 
-        if ((DS_ALLOCATED == p_ds_buffer->allocators[iter].allocation_status) && (offset == p_ds_buffer->allocators[iter].head)) {
+        const size_t offset_in_block = offset - p_ds_buffer->allocators[iter].head;
+
+        if (offset_in_block < p_ds_buffer->allocators[iter].size) {
+            if (DS_ALLOCATED != status) {
+                return ERROR_DS_ALLOCATOR_NOT_FOUND; /* inside a parked DS_FREE block */
+            }
             *p_alloc_idx = iter;
+            *p_offset_in_block = offset_in_block;
             return ERROR_DS_OK;
         }
     }
@@ -367,7 +454,7 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
     const size_t head = p_ds_buffer->allocators[alloc_idx].head;
     const size_t size = p_ds_buffer->allocators[alloc_idx].size;
 
-#if DS_ZERO_ON_FREE == 0u
+#if DS_ZERO_ON_FREE == 1u
     ds_zero(&p_ds_buffer->memory[head], DS_BUFFER_MEMORY_SIZE - head, size);
 #endif
 
@@ -568,5 +655,57 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer)
     ds_zero(p_ds_buffer->allocators, sizeof(p_ds_buffer->allocators), sizeof(p_ds_buffer->allocators));
     p_ds_buffer->data_head = 0;
     p_ds_buffer->used_allocators = 0;
+    return ERROR_DS_OK;
+}
+
+ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, const void *p_src_memory, size_t src_size)
+{
+    if ((NULL == p_alloc_holder) || (NULL == p_dst_memory) || (NULL == p_src_memory) || (0u == src_size)) {
+        return ERROR_DS_INVALID_ARG;
+    }
+
+    if (DS_MAGIC_NUMBER != p_alloc_holder->init_magic) {
+        return ERROR_DS_NO_INIT;
+    }
+
+    size_t alloc_idx;
+    size_t shift;
+    const ds_err_code_t ret = ds_find_allocator_containing(p_alloc_holder, p_dst_memory, &alloc_idx, &shift);
+    if (ERROR_DS_OK != ret) {
+        return ret;
+    }
+
+    const size_t capacity = p_alloc_holder->allocators[alloc_idx].size;
+    if ((src_size > capacity) || (shift > (capacity - src_size))) {
+        return ERROR_DS_NO_MEMORY; /* or a dedicated OUT_OF_BOUNDS — see review */
+    }
+
+    ds_memcpy(p_dst_memory, capacity - shift, p_src_memory, src_size);
+    return ERROR_DS_OK;
+}
+
+ds_err_code_t ds_safe_memory_set(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, char value_to_set, size_t cnt_to_set)
+{
+    if ((NULL == p_alloc_holder) || (NULL == p_dst_memory) || (0u == cnt_to_set)) {
+        return ERROR_DS_INVALID_ARG;
+    }
+
+    if (DS_MAGIC_NUMBER != p_alloc_holder->init_magic) {
+        return ERROR_DS_NO_INIT;
+    }
+
+    size_t alloc_idx;
+    size_t shift;
+    const ds_err_code_t ret = ds_find_allocator_containing(p_alloc_holder, p_dst_memory, &alloc_idx, &shift);
+    if (ERROR_DS_OK != ret) {
+        return ret;
+    }
+
+    const size_t capacity = p_alloc_holder->allocators[alloc_idx].size;
+    if ((cnt_to_set > capacity) || (shift > (capacity - cnt_to_set))) {
+        return ERROR_DS_NO_MEMORY; /* or a dedicated OUT_OF_BOUNDS — see review */
+    }
+
+    ds_memset(p_dst_memory, capacity - shift, value_to_set, cnt_to_set);
     return ERROR_DS_OK;
 }

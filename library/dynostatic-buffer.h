@@ -458,6 +458,46 @@ ds_err_code_t ds_get_free_allocator_cnt(const dynostatic_buffer_t *p_ds_buffer, 
  */
 ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer);
 
+/**
+ * @brief Try to save copy memory from given address to other, which is held by dynostatic buffer.
+ *
+ * Save copy means, that function checks, that given memory is part of got ds_buffer and allocation assigned to given
+ * buffer have destination memory size enough to copy source memory. If not, function returns error code.
+ *
+ * @param[in] p_alloc_holder Pointer to dynostatic-buffer structure holding the destination memory.
+ * @param[in, out] p_dst_memory Pointer to destination memory.
+ * @param[in] p_src_memory Pointer to source memory.
+ * @param[in] src_size Size of the source memory.
+ *
+ * @retval ERROR_DS_OK Memory was properly copied.
+ * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
+ * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
+ * @retval ERROR_DS_MEMORY_OUT_OF_DS Given memory is not part of dynostatic buffer.
+ * @retval ERROR_DS_ALLOCATOR_NOT_FOUND Given memory is not part of any allocation in dynostatic buffer.
+ * @retval ERROR_DS_NO_MEMORY Given memory is not enough to copy source memory.
+ */
+ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, const void *p_src_memory, size_t src_size);
+
+/**
+ * @brief Try to set memory in the destination buffer to a specific value.
+ *
+ * Save copy means, that function checks, that given memory is part of got ds_buffer and allocation assigned to given
+ * buffer have destination memory size enough to set memory. If not, function returns error code.
+ *
+ * @param[in] p_alloc_holder Pointer to dynostatic-buffer structure holding the destination memory.
+ * @param[in, out] p_dst_memory Pointer to destination memory.
+ * @param[in] value_to_set Value to set in the destination memory.
+ * @param[in] cnt_to_set Number of bytes to set in the destination memory.
+ *
+ * @retval ERROR_DS_OK Memory was properly set.
+ * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
+ * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
+ * @retval ERROR_DS_MEMORY_OUT_OF_DS Given memory is not part of dynostatic buffer.
+ * @retval ERROR_DS_ALLOCATOR_NOT_FOUND Given memory is not part of any allocation in dynostatic buffer.
+ * @retval ERROR_DS_NO_MEMORY Given memory is not enough to set the specified value.
+ */
+ds_err_code_t ds_safe_memory_set(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, char value_to_set, size_t cnt_to_set);
+
 #ifdef __cplusplus
 }
 #endif
