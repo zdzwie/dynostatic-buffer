@@ -8,13 +8,16 @@
   "configurePresets": [
     {
       "name": "dev",
-      "displayName": "Debug build with tests",
+      "displayName": "Debug build with tests and AddressSanitizer",
       "binaryDir": "${sourceDir}/build/dev",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "DS_BUILD_TESTS": "ON",
         "DS_ZERO_ON_FREE": "ON",
-        "BUILD_DOC": "OFF"
+        "BUILD_DOC": "OFF",
+        "CMAKE_C_FLAGS": "-fsanitize=address -fno-omit-frame-pointer -O1 -g",
+        "CMAKE_CXX_FLAGS": "-fsanitize=address -fno-omit-frame-pointer -O1 -g",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address"
       }
     },
     {
