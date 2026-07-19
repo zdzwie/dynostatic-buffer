@@ -25,6 +25,8 @@ add_executable( ds_tests
                 utests-getters.cpp
         utests-safe-memory-copy.cpp
         utests-safe-memory-set.cpp
+        utests-monte-carlo-malloc.cpp
+        utests-monte-carlo-realloc.cpp
 )
 
 target_link_libraries(ds_tests PRIVATE
