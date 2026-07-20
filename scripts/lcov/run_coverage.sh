@@ -23,16 +23,17 @@ OUT_DIR="${2:-coverage}"
 # The available --ignore-errors categories and the branch-coverage rc key differ
 # between lcov 1.x and 2.x, so pick flags based on the installed version.
 LCOV_MAJOR="$(lcov --version 2>/dev/null | grep -oE '[0-9]+' | head -1)"
+EXCL_BR_RC='lcov_excl_br_line=LCOV_EXCL_BR_LINE|DS_ASSERT'
+
 if [ "${LCOV_MAJOR:-1}" -ge 2 ]; then
-    # lcov 2.x is strict about minor gcov/source inconsistencies; downgrade them.
     LCOV_IGNORE=(--ignore-errors mismatch,gcov,source,empty,negative,unused)
     GENHTML_IGNORE=(--ignore-errors mismatch,source,empty,negative,unused)
-    LCOV_RC=(--rc branch_coverage=1)
+    LCOV_RC=(--rc branch_coverage=1 --rc "$EXCL_BR_RC")
     GENHTML_RC=(--rc branch_coverage=1)
 else
     LCOV_IGNORE=(--ignore-errors gcov,source,graph)
     GENHTML_IGNORE=(--ignore-errors source)
-    LCOV_RC=(--rc lcov_branch_coverage=1)
+    LCOV_RC=(--rc lcov_branch_coverage=1 --rc "$EXCL_BR_RC")
     GENHTML_RC=(--rc genhtml_branch_coverage=1)
 fi
 
