@@ -129,3 +129,29 @@ TEST_F(Realloc_Tests, Grow_Moves_When_Blocked)
         ASSERT_EQ(bytes[i], 0x77) << "byte " << i << " lost during move";
     }
 }
+
+TEST_F(Realloc_Tests, Rejects_Too_Big_Size)
+{
+    void *p = NULL;
+    ASSERT_EQ(ds_realloc(&buf_, &p, 16), ERROR_DS_OK);
+    void *const before = p;
+
+    ASSERT_EQ(ds_realloc(&buf_, &p, DS_MAX_ALLOCATION_SIZE + 1u), ERROR_DS_TOO_BIG_CHUNK);
+    ASSERT_EQ(p, before);
+}
+
+TEST_F(Realloc_Tests, Rejects_Foreign_And_Interior_Pointers)
+{
+    void *p = NULL;
+    ASSERT_EQ(ds_realloc(&buf_, &p, 16), ERROR_DS_OK);
+
+    /* Interior pointer: in the arena, not a block start. */
+    void *interior = static_cast<uint8_t *>(p) + 3;
+    ASSERT_EQ(ds_realloc(&buf_, &interior, 32), ERROR_DS_ALLOCATOR_NOT_FOUND);
+
+    /* Foreign pointer: outside the arena entirely. */
+    char stack_var = 0;
+    void *foreign = &stack_var;
+    ASSERT_EQ(ds_realloc(&buf_, &foreign, 32), ERROR_DS_MEMORY_OUT_OF_DS);
+    ASSERT_EQ(foreign, &stack_var);
+}

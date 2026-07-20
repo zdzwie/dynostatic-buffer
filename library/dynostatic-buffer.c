@@ -98,10 +98,6 @@ static inline void ds_memcpy(void *p_dest, size_t dest_size, const void *p_src, 
  * a fresh record gets capacity ds_align_up(size). The scan stops at the
  * first DS_NOT_USED record (compact-prefix invariant, see ds_allocator_t).
  *
- * @pre p_ds_buffer and p_alloc_idx are non-NULL; the instance is
- *      initialized; size passed the public ds_malloc validation — the
- *      internal size re-check is defensive only and unreachable through
- *      the public API.
  *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
  * @param[in] size Requested size in bytes (raw; alignment is applied here).
@@ -109,8 +105,6 @@ static inline void ds_memcpy(void *p_dest, size_t dest_size, const void *p_src, 
  *                         ERROR_DS_OK.
  *
  * @retval ERROR_DS_OK Record assigned; *p_alloc_idx identifies it.
- * @retval ERROR_DS_INVALID_ARG Defensive size re-check failed (dead branch
- *                              through the public API).
  * @retval ERROR_DS_NO_ALLOCATORS Either DS_MAX_ALLOCATION_COUNT blocks are
  *                                already live, or every record is occupied
  *                                (live, or parked with too small a
@@ -268,10 +262,8 @@ static inline void ds_memcpy(void *p_dest, size_t dest_size, const void *p_src, 
 
 static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size, size_t *p_alloc_idx)
 {
+    /* No need to check params validness (cause of public API implementation it will be dead code). */
     size_t iter;
-    if ((size == 0u) || (size > DS_MAX_ALLOCATION_SIZE)) {
-        return ERROR_DS_INVALID_ARG;
-    }
 
     if (p_ds_buffer->used_allocators >= DS_MAX_ALLOCATION_COUNT) {
         return ERROR_DS_NO_ALLOCATORS;
@@ -571,10 +563,13 @@ ds_err_code_t ds_get_memory_usage(const dynostatic_buffer_t *p_ds_buffer, uint8_
         }
     }
 
+    /* LCOV_EXCL_START: Unreachable while allocator invariants hold — corrupted-state guard
+        * by design; excluded from coverage rather than pretend-tested. */
     if (usage > DS_BUFFER_MEMORY_SIZE) {
         *p_memory_usage = 0;
         return ERROR_DS_CRITICAL_ERR;
     }
+    /* LCOV_EXCL_STOP */
 
     *p_memory_usage = (uint8_t)((100u * usage) / DS_BUFFER_MEMORY_SIZE);
     return ERROR_DS_OK;
