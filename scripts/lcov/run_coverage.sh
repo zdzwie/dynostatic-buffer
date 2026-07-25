@@ -20,6 +20,11 @@ cd "$REPO_ROOT"
 BUILD_DIR="${1:-build/coverage}"
 OUT_DIR="${2:-coverage}"
 
+# Whitelist: only files whose path matches one of these globs are kept in the
+# final report. Everything else (tests, googletest, examples, system headers)
+# is dropped, so Codecov's project total reflects library code only.
+INCLUDE_PATTERNS=('*/library/*')
+
 # The available --ignore-errors categories and the branch-coverage rc key differ
 # between lcov 1.x and 2.x, so pick flags based on the installed version.
 LCOV_MAJOR="$(lcov --version 2>/dev/null | grep -oE '[0-9]+' | head -1)"
@@ -62,13 +67,10 @@ lcov "${LCOV_RC[@]}" "${LCOV_IGNORE[@]}" \
     --capture --directory "$BUILD_DIR" \
     --output-file "$OUT_DIR/coverage.info"
 
-echo "==> Filtering out external / test code"
+echo "==> Filtering: keep only library code (whitelist)"
 lcov "${LCOV_RC[@]}" "${LCOV_IGNORE[@]}" \
-    --remove "$OUT_DIR/coverage.info" \
-    '/usr/*' \
-    '*/googletest/*' \
-    '*/_deps/*' \
-    '*/tests/*' \
+    --extract "$OUT_DIR/coverage.info" \
+    "${INCLUDE_PATTERNS[@]}" \
     --output-file "$OUT_DIR/coverage.filtered.info"
 
 echo "==> Coverage summary"
