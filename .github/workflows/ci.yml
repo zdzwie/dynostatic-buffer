@@ -54,19 +54,50 @@ jobs:
         run: cmake --build --preset release
 
   unit-tests:
-    name: Unit tests
-    runs-on: ubuntu-latest
+    name: Unit tests (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: GCC
+            os: ubuntu-latest
+            preset: dev
+            cc: gcc
+            cxx: g++
+          - name: Clang
+            os: ubuntu-latest
+            preset: dev
+            cc: clang
+            cxx: clang++
+          - name: GCC 32-bit
+            os: ubuntu-latest
+            preset: dev-m32
+            cc: gcc
+            cxx: g++
+          # No cc/cxx: the Visual Studio generator ignores CC/CXX and locates
+          # the MSVC toolchain itself.
+          - name: MSVC
+            os: windows-latest
+            preset: dev-msvc
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install 32-bit toolchain
+        if: matrix.preset == 'dev-m32'
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib g++-multilib
+
       - name: Configure
-        run: cmake --preset dev
+        run: cmake --preset ${{ matrix.preset }}
 
       - name: Build
-        run: cmake --build --preset dev
+        run: cmake --build --preset ${{ matrix.preset }}
 
       - name: Run tests
-        run: ctest --preset dev
+        run: ctest --preset ${{ matrix.preset }}
 
   coverage:
     name: Test coverage

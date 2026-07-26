@@ -67,10 +67,18 @@ extern "C" {
     #define DS_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
 #endif
 
+/* The strictest fundamental alignment. C11 provides max_align_t for this, but
+ * MSVC only defines it for C++ (as std::max_align_t)*/
+typedef struct {
+    long long ds_ll_;
+    long double ds_ld_;
+    void *ds_ptr_;
+} ds_max_align_t;
+
 /** @cond DOXYGEN_SHOULD_SKIP_THIS */
 DS_STATIC_ASSERT((DS_ALIGNMENT & (DS_ALIGNMENT - 1u)) == 0u, "DS_ALIGNMENT must be a power of two");
 DS_STATIC_ASSERT(DS_ALIGNMENT >= alignof(uint32_t), "DS_ALIGNMENT must at least satisfy 32-bit types");
-DS_STATIC_ASSERT(DS_ALIGNMENT <= alignof(max_align_t), "DS_ALIGNMENT exceeds the strictest fundamental alignment");
+DS_STATIC_ASSERT((size_t)DS_ALIGNMENT <= (size_t)alignof(ds_max_align_t), "DS_ALIGNMENT exceeds the strictest fundamental alignment");
 DS_STATIC_ASSERT(DS_MAX_ALLOCATION_SIZE <= DS_BUFFER_MEMORY_SIZE, "DS_MAX_ALLOCATION_SIZE must not exceed DS_BUFFER_MEMORY_SIZE");
 DS_STATIC_ASSERT(DS_MAX_ALLOCATION_COUNT > 0u, "DS_MAX_ALLOCATION_COUNT must be positive");
 DS_STATIC_ASSERT(DS_MAX_ALLOCATION_SIZE > 0u, "DS_MAX_ALLOCATION_SIZE must be positive");
