@@ -68,6 +68,24 @@ jobs:
       - name: Run tests
         run: ctest --preset dev
 
+  unit-tests-clang:
+    name: Unit tests (Clang)
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake --preset dev
+
+      - name: Build
+        run: cmake --build --preset dev
+
+      - name: Run tests
+        run: ctest --preset dev
+
   coverage:
     name: Test coverage
     runs-on: ubuntu-latest
