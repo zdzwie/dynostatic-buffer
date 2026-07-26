@@ -21,6 +21,31 @@
       }
     },
     {
+      "name": "dev-m32",
+      "displayName": "Debug build with tests, 32-bit (GCC/Clang -m32)",
+      "binaryDir": "${sourceDir}/build/dev-m32",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DS_BUILD_TESTS": "ON",
+        "DS_ZERO_ON_FREE": "ON",
+        "BUILD_DOC": "OFF",
+        "CMAKE_C_FLAGS": "-m32 -O1 -g",
+        "CMAKE_CXX_FLAGS": "-m32 -O1 -g",
+        "CMAKE_EXE_LINKER_FLAGS": "-m32"
+      }
+    },
+    {
+      "name": "dev-msvc",
+      "displayName": "Debug build with tests (MSVC / Visual Studio)",
+      "binaryDir": "${sourceDir}/build/dev-msvc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DS_BUILD_TESTS": "ON",
+        "DS_ZERO_ON_FREE": "ON",
+        "BUILD_DOC": "OFF"
+      }
+    },
+    {
       "name": "release",
       "displayName": "Optimized build without tests",
       "binaryDir": "${sourceDir}/build/release",
@@ -69,6 +94,8 @@
   ],
   "buildPresets": [
     { "name": "dev", "configurePreset": "dev" },
+    { "name": "dev-m32", "configurePreset": "dev-m32" },
+    { "name": "dev-msvc", "configurePreset": "dev-msvc", "configuration": "Debug" },
     { "name": "release", "configurePreset": "release" },
     { "name": "coverage", "configurePreset": "coverage" },
     { "name": "docs", "configurePreset": "docs" }
@@ -77,6 +104,17 @@
     {
       "name": "dev",
       "configurePreset": "dev",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "dev-m32",
+      "configurePreset": "dev-m32",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "dev-msvc",
+      "configurePreset": "dev-msvc",
+      "configuration": "Debug",
       "output": { "outputOnFailure": true }
     },
     {

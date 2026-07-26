@@ -17,7 +17,6 @@
 
 extern "C" {
 #include "dynostatic-buffer.h"
-#include "error.h"
 }
 
 
@@ -28,9 +27,10 @@ inline bool IsAligned(const void *p)
     return (reinterpret_cast<uintptr_t>(p) % DS_ALIGNMENT) == 0u;
 }
 
-inline size_t AlignUp(size_t v)
+constexpr std::size_t AlignUp(std::size_t v) noexcept
 {
-    return (v + (DS_ALIGNMENT - 1u)) & ~static_cast<size_t>(DS_ALIGNMENT - 1u);
+    return (v + (DS_ALIGNMENT - 1u))
+         & ~static_cast<std::size_t>(DS_ALIGNMENT - 1u);
 }
 
 /**

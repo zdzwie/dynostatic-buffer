@@ -1,6 +1,12 @@
 add_library(dynostatic_buffer dynostatic-buffer.c)
 include(../scripts/cmake/generate_doc.cmake)
 
+# The public header relies on C11 (_Static_assert, <stdalign.h>'s alignof/
+# alignas, max_align_t). GCC/Clang default to gnu11+, but MSVC defaults to a
+# pre-C11 dialect and rejects them, so require C11 explicitly. PUBLIC so every
+# consumer (example, unit tests) compiles the header in the same mode.
+target_compile_features(dynostatic_buffer PUBLIC c_std_11)
+
 # Expose the public header location to anyone linking the library
 # (examples and unit tests), so they include the same header.
 target_include_directories(dynostatic_buffer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
