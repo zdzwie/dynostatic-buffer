@@ -1,11 +1,11 @@
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG release-1.12.1
+  GIT_TAG v1.17.0
 )
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
@@ -13,16 +13,16 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_executable( ds_tests
-                utests-common.cpp
-                utests-init.cpp
-                utests-malloc.cpp
-                utests-free.cpp
-                utests-multi-alloc.cpp
-                utests-alligment.cpp
-                utests-calloc.cpp
-                utests-realloc.cpp
-                utests-memory-usage.cpp
-                utests-getters.cpp
+        utests-common.cpp
+        utests-init.cpp
+        utests-malloc.cpp
+        utests-free.cpp
+        utests-multi-alloc.cpp
+        utests-alligment.cpp
+        utests-calloc.cpp
+        utests-realloc.cpp
+        utests-memory-usage.cpp
+        utests-getters.cpp
         utests-safe-memory-copy.cpp
         utests-safe-memory-set.cpp
         utests-monte-carlo-malloc.cpp
