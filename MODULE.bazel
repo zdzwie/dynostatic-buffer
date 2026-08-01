@@ -1,0 +1,13 @@
+"""Bazel module definition for dynostatic-buffer.
+
+Provides a Bazel build in parallel with the primary CMake build. The C library,
+the example binary and the C++ unit tests are all buildable with Bazel; see the
+BUILD.bazel files in library/, examples/ and tests/.
+"""
+
+module(
+    name = "dynostatic_buffer",
+    version = "0.1",
+)
+
+bazel_dep(name = "googletest", version = "1.17.0")
