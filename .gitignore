@@ -1,6 +1,10 @@
 #Build files
 build/
 
+#Bazel output symlinks and lockfile
+bazel-*
+MODULE.bazel.lock
+
 #Generated documentation artifacts
 docs/_build/
 docs/_doxygen/

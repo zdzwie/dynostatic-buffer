@@ -42,16 +42,28 @@ jobs:
           pre-commit run --all-files --show-diff-on-failure --color=always
 
   build-example:
-    name: Build example
+    name: Build example (${{ matrix.name }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: CMake
+            system: cmake
+          - name: Bazel
+            system: bazel
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure
-        run: cmake --preset release
+      - name: Build with CMake
+        if: matrix.system == 'cmake'
+        run: |
+          cmake --preset release
+          cmake --build --preset release
 
-      - name: Build
-        run: cmake --build --preset release
+      - name: Build and test with Bazel
+        if: matrix.system == 'bazel'
+        run: bazel test //...
 
   unit-tests:
     name: Unit tests (${{ matrix.name }})
