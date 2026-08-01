@@ -1,0 +1,13 @@
+# Select the build:<os> config below automatically (build:linux, build:windows,
+# build:macos) based on the host platform.
+common --enable_platform_specific_config
+
+# The unit tests require C++20 (see tests/unit/CMakeLists.txt). The public C
+# header requires C11, which every supported compiler already enables by
+# default (GCC/Clang default to gnu17, MSVC to C17), so only C++ needs a flag.
+build:linux --cxxopt=-std=c++20
+build:macos --cxxopt=-std=c++20
+build:windows --cxxopt=/std:c++20
+
+# Print the log of failing tests instead of just the summary line.
+test --test_output=errors

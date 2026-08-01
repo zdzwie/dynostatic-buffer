@@ -1,0 +1,27 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
+cc_test(
+    name = "ds_tests",
+    srcs = [
+        "utests-common.cpp",
+        "utests-common.hpp",
+        "utests-init.cpp",
+        "utests-malloc.cpp",
+        "utests-free.cpp",
+        "utests-multi-alloc.cpp",
+        "utests-alligment.cpp",
+        "utests-calloc.cpp",
+        "utests-realloc.cpp",
+        "utests-memory-usage.cpp",
+        "utests-getters.cpp",
+        "utests-safe-memory-copy.cpp",
+        "utests-safe-memory-set.cpp",
+        "utests-monte-carlo-malloc.cpp",
+        "utests-monte-carlo-realloc.cpp",
+    ],
+    deps = [
+        "//library:dynostatic_buffer",
+        "//tests/utils:test_utils",
+        "@googletest//:gtest_main",
+    ],
+)

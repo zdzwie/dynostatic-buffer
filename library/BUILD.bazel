@@ -1,0 +1,19 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "dynostatic_buffer",
+    srcs = ["dynostatic-buffer.c"],
+    hdrs = ["dynostatic-buffer.h"],
+    # These defines change the layout of dynostatic_buffer_t, so they must be
+    # visible to every consumer of the header (example, unit tests), matching
+    # the PUBLIC compile definitions in the CMake build.
+    defines = [
+        "DS_BUFFER_MEMORY_SIZE=1024",
+        "DS_LOG_ENABLE=1u",
+        "DS_MAX_ALLOCATION_COUNT=10",
+        "DS_MAX_ALLOCATION_SIZE=512",
+    ],
+    includes = ["."],
+    local_defines = ["DS_ZERO_ON_FREE=0"],
+    visibility = ["//visibility:public"],
+)
