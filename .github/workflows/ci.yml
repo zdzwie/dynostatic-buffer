@@ -52,6 +52,8 @@ jobs:
             system: cmake
           - name: Bazel
             system: bazel
+          - name: Make
+            system: make
     steps:
       - uses: actions/checkout@v4
 
@@ -64,6 +66,12 @@ jobs:
       - name: Build and test with Bazel
         if: matrix.system == 'bazel'
         run: bazel test //...
+
+      - name: Build with Make
+        if: matrix.system == 'make'
+        run: |
+          make
+          make example
 
   unit-tests:
     name: Unit tests (${{ matrix.name }})
