@@ -26,19 +26,27 @@ BUILD_DIR := build/make
 DYNOSTATIC_BUFFER_BUILD_DIR := $(BUILD_DIR)
 include library/dynostatic-buffer.mk
 
-SHARED_LIB  := $(BUILD_DIR)/libdynostatic_buffer.so
-EXAMPLE_BIN := $(BUILD_DIR)/dynostatic_example
+SHARED_LIB := $(BUILD_DIR)/libdynostatic_buffer.so
+
+# One binary per example source. Drop a new .c file into examples/ and it is
+# built automatically; the binary keeps the source's base name.
+EXAMPLE_SRCS := $(wildcard examples/*.c)
+EXAMPLE_HDR  := examples/example_common.h
+EXAMPLE_BINS := $(patsubst examples/%.c,$(BUILD_DIR)/%,$(EXAMPLE_SRCS))
 
 # ---- Targets ---------------------------------------------------------------
 
-.PHONY: all static shared example clean
+.PHONY: all static shared examples example clean
 
 all: static shared
 
 # The static library is built entirely by the included fragment.
 static: $(DYNOSTATIC_BUFFER_A)
 shared: $(SHARED_LIB)
-example: $(EXAMPLE_BIN)
+
+# `examples` builds them all; `example` is kept as a backwards-compatible alias.
+examples: $(EXAMPLE_BINS)
+example: examples
 
 # Shared library: compiled -fPIC from the same source/flags the fragment uses.
 $(SHARED_LIB): $(DYNOSTATIC_BUFFER_SRC) $(DYNOSTATIC_BUFFER_HDR)
@@ -46,13 +54,13 @@ $(SHARED_LIB): $(DYNOSTATIC_BUFFER_SRC) $(DYNOSTATIC_BUFFER_HDR)
 	$(CC) $(DYNOSTATIC_BUFFER_CPPFLAGS) -DDS_ZERO_ON_FREE=$(DS_ZERO_ON_FREE) \
 		$(DYNOSTATIC_BUFFER_CFLAGS) -fPIC -shared $< -o $@
 
-# Example links the archive directly so the linker cannot substitute the shared
-# library, which would leave the binary needing libdynostatic_buffer.so at run
-# time. Note it compiles with DYNOSTATIC_BUFFER_CPPFLAGS, exactly as a external
-# consumer of the fragment would.
-$(EXAMPLE_BIN): examples/basic_example.c $(DYNOSTATIC_BUFFER_A)
+# Each example links the archive directly so the linker cannot substitute the
+# shared library, which would leave the binary needing libdynostatic_buffer.so
+# at run time. Note it compiles with DYNOSTATIC_BUFFER_CPPFLAGS, exactly as an
+# external consumer of the fragment would.
+$(BUILD_DIR)/%: examples/%.c $(EXAMPLE_HDR) $(DYNOSTATIC_BUFFER_A)
 	@mkdir -p $(@D)
-	$(CC) $(DYNOSTATIC_BUFFER_CPPFLAGS) $(DYNOSTATIC_BUFFER_CFLAGS) \
+	$(CC) $(DYNOSTATIC_BUFFER_CPPFLAGS) -Iexamples $(DYNOSTATIC_BUFFER_CFLAGS) \
 		$< $(DYNOSTATIC_BUFFER_A) -o $@
 
 clean:
