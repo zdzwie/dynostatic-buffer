@@ -77,3 +77,4 @@ repos:
         entry: scripts/clang-tidy/run-clang-tidy.sh
         files: '^(library|examples)/.*\.(c|cpp|cc|cxx)$'
         pass_filenames: true
+        require_serial: true
