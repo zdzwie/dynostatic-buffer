@@ -25,18 +25,18 @@ The Bazel build is pinned to Bazel 8 via `.bazelversion` (bazelisk picks it up
 automatically) and pulls GoogleTest from the Bazel Central Registry:
 
 ```sh
-bazel build //...          # library + example
+bazel build //...          # library + examples
 bazel test //...           # also run the unit tests
-bazel run //examples:dynostatic_example
+bazel run //examples:basic_example
 ```
 
 ### Make
 
-The top-level `Makefile` builds the library and example directly:
+The top-level `Makefile` builds the library and examples directly:
 
 ```sh
 make            # static + shared library into build/make/
-make example    # build and run-ready example
+make examples   # build every example program into build/make/
 make DS_ZERO_ON_FREE=1   # override options on the command line
 ```
 
@@ -70,6 +70,28 @@ clashing with the host project. Useful knobs (all overridable):
 | `DYNOSTATIC_BUFFER_BUILD_DIR` | where artefacts are written (default `build/dynostatic-buffer`) |
 | `DS_ZERO_ON_FREE` | set to `1` to zero freed blocks (library-private) |
 | `DS_BUFFER_MEMORY_SIZE`, `DS_MAX_ALLOCATION_COUNT`, ... | buffer layout configuration |
+
+## Examples
+
+The [`examples/`](examples/) directory holds small, self-contained programs
+that each demonstrate one facet of the API. They build with all three build
+systems above (each is a standalone `*.c` file, so new examples are picked up
+automatically):
+
+| Example | Shows |
+|---------|-------|
+| `basic_example` | initialize, `ds_malloc`, use, `ds_free`, deinit |
+| `array_calloc_realloc` | zero-filled arrays with `ds_calloc` and growing with `ds_realloc` |
+| `buffer_introspection` | the read-only query API (usage, free slots, largest allocation) |
+| `safe_memory_ops` | bounds-checked writes via `ds_safe_memory_set`/`ds_safe_memory_copy` |
+
+Run one after building, e.g. with CMake:
+
+```sh
+./build/release/basic_example
+```
+
+See [`examples/README.md`](examples/README.md) for a per-example description.
 
 ## Documentation
 

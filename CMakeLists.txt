@@ -7,8 +7,13 @@ option(DS_ZERO_ON_FREE "Zero the contents of freed blocks in dynostatic-buffer" 
 
 add_subdirectory(library)
 
-add_executable(Dynostatic_Example examples/basic_example.c)
-target_link_libraries(Dynostatic_Example PUBLIC dynostatic_buffer)
+file(GLOB DS_EXAMPLE_SOURCES CONFIGURE_DEPENDS
+     "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.c")
+foreach(example_source ${DS_EXAMPLE_SOURCES})
+    get_filename_component(example_name "${example_source}" NAME_WE)
+    add_executable(${example_name} "${example_source}")
+    target_link_libraries(${example_name} PUBLIC dynostatic_buffer)
+endforeach()
 
 if(DS_BUILD_TESTS)
     include(CTest)

@@ -1,7 +1,18 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
-cc_binary(
-    name = "dynostatic_example",
-    srcs = ["basic_example.c"],
-    deps = ["//library:dynostatic_buffer"],
-)
+# One binary per example source. Each example is a standalone *.c file that
+# includes the shared header-only helper (example_common.h), so new examples
+# are picked up automatically just by dropping a .c file in this directory.
+# The target name is the file name without its .c extension, e.g.
+#   bazel run //examples:basic_example
+[
+    cc_binary(
+        name = src[:-len(".c")],
+        srcs = [
+            src,
+            "example_common.h",
+        ],
+        deps = ["//library:dynostatic_buffer"],
+    )
+    for src in glob(["*.c"])
+]
