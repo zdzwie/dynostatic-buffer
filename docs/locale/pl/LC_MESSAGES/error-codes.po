@@ -1,0 +1,198 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2022, Jakub Brzezowski
+# This file is distributed under the same license as the dynostatic-buffer
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: dynostatic-buffer\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-09 15:17+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Jakub Brzezowski <jakubbrzez@wp.pl>\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../error-codes.rst:2
+msgid "Error codes"
+msgstr "Kody błędów"
+
+#: ../../error-codes.rst:4
+msgid ""
+"Every public function returns a :c:type:`ds_err_code_t`. The value "
+":c:macro:`ERROR_DS_OK` is ``0`` and means success; any non-zero value is a "
+"specific, actionable failure. This page is a reference for what each code "
+"means and how to react to it."
+msgstr ""
+"Każda funkcja publiczna zwraca :c:type:`ds_err_code_t`. Wartość "
+":c:macro:`ERROR_DS_OK` wynosi ``0`` i oznacza sukces; każda wartość "
+"niezerowa to konkretne, wymagające reakcji niepowodzenie. Ta strona stanowi "
+"odniesienie do tego, co oznacza każdy kod i jak na niego zareagować."
+
+#: ../../error-codes.rst:11
+msgid ""
+"Because :c:macro:`ERROR_DS_OK` is ``0``, the idiomatic check is ``if (err !="
+" ERROR_DS_OK)`` (or simply ``if (err)`` for \"did anything go wrong\"). On "
+"failure the function leaves its outputs and the instance state untouched, so"
+" you can handle the error without undoing partial work."
+msgstr ""
+"Ponieważ :c:macro:`ERROR_DS_OK` wynosi ``0``, idiomatycznym sprawdzeniem "
+"jest ``if (err != ERROR_DS_OK)`` (lub po prostu ``if (err)`` dla „czy "
+"cokolwiek poszło nie tak”). Przy niepowodzeniu funkcja pozostawia swoje dane"
+" wyjściowe i stan instancji nietknięte, więc możesz obsłużyć błąd bez "
+"cofania częściowej pracy."
+
+#: ../../error-codes.rst:17
+msgid "Reference"
+msgstr "Odniesienie"
+
+#: ../../error-codes.rst:21
+msgid ""
+"The operation succeeded and any output parameter has been written. Numeric "
+"value ``0``; this is the only non-error value."
+msgstr ""
+"Operacja się powiodła i każdy parametr wyjściowy został zapisany. Wartość "
+"liczbowa ``0``; jest to jedyna wartość nieoznaczająca błędu."
+
+#: ../../error-codes.rst:26
+msgid ""
+"The instance has not been initialized (or has been deinitialized). Call "
+":c:func:`ds_initialize_allocation` first. Also check that the structure was "
+"zero-initialized before that first call."
+msgstr ""
+"Instancja nie została zainicjalizowana (albo została zdeinicjalizowana). "
+"Najpierw wywołaj :c:func:`ds_initialize_allocation`. Sprawdź także, czy "
+"struktura została wyzerowana przed tym pierwszym wywołaniem."
+
+#: ../../error-codes.rst:32
+msgid ""
+"An argument is invalid: a ``NULL`` pointer where one is required, a zero "
+"``size``/``len``/``size_of_elem``, or an overflowing element-count product "
+"in :c:func:`ds_calloc`. Fix the call site — this indicates a programming "
+"error, not a resource shortage."
+msgstr ""
+"Argument jest nieprawidłowy: wskaźnik ``NULL`` tam, gdzie jest wymagany, "
+"zerowy ``size``/``len``/``size_of_elem`` albo przepełniający się iloczyn "
+"liczby elementów w :c:func:`ds_calloc`. Popraw miejsce wywołania — wskazuje "
+"to na błąd programistyczny, a nie na brak zasobów."
+
+#: ../../error-codes.rst:39
+msgid ""
+":c:func:`ds_initialize_allocation` was called on an instance that is already"
+" initialized. Deinitialize it first if you really want to reset it. (Often a"
+" symptom of an uninitialized, garbage-filled instance — see the zero-"
+"initialization warning in :doc:`getting-started`.)"
+msgstr ""
+":c:func:`ds_initialize_allocation` zostało wywołane na instancji, która jest"
+" już zainicjalizowana. Najpierw ją zdeinicjalizuj, jeśli naprawdę chcesz ją "
+"zresetować. (Często jest to objaw niezainicjalizowanej, wypełnionej "
+"śmieciami instancji — zobacz ostrzeżenie o zerowaniu w :doc:`getting-"
+"started`.)"
+
+#: ../../error-codes.rst:46
+msgid ""
+"There is no free region large enough to satisfy the aligned request, even "
+"though allocator slots may be available. Free something, request less, or "
+"use :c:func:`ds_get_max_new_allocation_size` to learn the largest size that "
+"would currently succeed. Also returned by the safe-memory helpers when the "
+"destination allocation is too small for the write."
+msgstr ""
+"Nie ma wolnego obszaru wystarczająco dużego, aby spełnić wyrównane żądanie, "
+"nawet jeśli sloty alokatora mogą być dostępne. Zwolnij coś, poproś o mniej "
+"lub użyj :c:func:`ds_get_max_new_allocation_size`, aby poznać największy "
+"rozmiar, który obecnie by się powiódł. Zwracany również przez pomocnicze "
+"funkcje bezpiecznej pamięci, gdy alokacja docelowa jest zbyt mała na zapis."
+
+#: ../../error-codes.rst:54
+msgid ""
+"Every allocator record is occupied (live or parked for reuse), so no new "
+"block can be tracked regardless of free memory. Free a block, or raise "
+":c:macro:`DS_MAX_ALLOCATION_COUNT`. Check with "
+":c:func:`ds_get_free_allocator_cnt`."
+msgstr ""
+"Każdy rekord alokatora jest zajęty (aktywny lub zaparkowany do ponownego "
+"użycia), więc nie można śledzić żadnego nowego bloku niezależnie od wolnej "
+"pamięci. Zwolnij blok lub zwiększ :c:macro:`DS_MAX_ALLOCATION_COUNT`. "
+"Sprawdź za pomocą :c:func:`ds_get_free_allocator_cnt`."
+
+#: ../../error-codes.rst:61
+msgid ""
+"The requested size exceeds :c:macro:`DS_MAX_ALLOCATION_SIZE`. Split the "
+"request, or raise the compile-time cap."
+msgstr ""
+"Żądany rozmiar przekracza :c:macro:`DS_MAX_ALLOCATION_SIZE`. Podziel żądanie"
+" lub zwiększ limit ustalany na etapie kompilacji."
+
+#: ../../error-codes.rst:66
+msgid ""
+"The pointer passed to :c:func:`ds_free`, :c:func:`ds_realloc` or a safe-"
+"memory helper lies outside this instance's arena — for example a stack/heap "
+"pointer, or a pointer from a *different* instance. Make sure you are freeing"
+" against the instance that allocated it."
+msgstr ""
+"Wskaźnik przekazany do :c:func:`ds_free`, :c:func:`ds_realloc` lub "
+"pomocniczej funkcji bezpiecznej pamięci leży poza areną tej instancji — na "
+"przykład wskaźnik na stos/stertę albo wskaźnik z *innej* instancji. Upewnij "
+"się, że zwalniasz go względem instancji, która go zaalokowała."
+
+#: ../../error-codes.rst:73
+msgid ""
+"The pointer is inside the arena but is not the start of a live block. "
+"Typically a double free or an interior pointer (an address partway into a "
+"block). Only pass back the exact pointer the allocator returned."
+msgstr ""
+"Wskaźnik znajduje się wewnątrz areny, ale nie jest początkiem aktywnego "
+"bloku. Zwykle jest to podwójne zwolnienie lub wskaźnik wewnętrzny (adres w "
+"środku bloku). Przekazuj z powrotem wyłącznie dokładnie ten wskaźnik, który "
+"zwrócił alokator."
+
+#: ../../error-codes.rst:79
+msgid ""
+"The ``*p_memory`` handed to :c:func:`ds_malloc` / :c:func:`ds_calloc` "
+"already points to a live block. This is the leak guard: free the block "
+"first, or use :c:func:`ds_realloc` to resize it. Always pass a ``NULL`` (or "
+"freed-to-``NULL``) pointer into an allocation call."
+msgstr ""
+"``*p_memory`` przekazany do :c:func:`ds_malloc` / :c:func:`ds_calloc` już "
+"wskazuje na aktywny blok. Jest to zabezpieczenie przed wyciekami: najpierw "
+"zwolnij blok albo użyj :c:func:`ds_realloc`, aby zmienić jego rozmiar. Do "
+"wywołania alokacji zawsze przekazuj wskaźnik ``NULL`` (lub zwolniony do "
+"``NULL``)."
+
+#: ../../error-codes.rst:86
+msgid ""
+"An internal invariant was violated — for instance, live capacities summing "
+"to more than the arena size in :c:func:`ds_get_memory_usage`. This should "
+"not happen in correct use; it points to memory corruption or a bug and "
+"warrants investigation rather than a retry."
+msgstr ""
+"Naruszony został wewnętrzny niezmiennik — na przykład aktywne pojemności "
+"sumujące się do wartości większej niż rozmiar areny w "
+":c:func:`ds_get_memory_usage`. Nie powinno się to zdarzyć przy poprawnym "
+"użyciu; wskazuje na korupcję pamięci lub błąd i wymaga zbadania, a nie "
+"ponowienia próby."
+
+#: ../../error-codes.rst:92
+msgid "Which functions return what"
+msgstr "Które funkcje zwracają co"
+
+#: ../../error-codes.rst:94
+msgid ""
+"The per-function ``@retval`` lists in the :doc:`api` reference are the "
+"authoritative source for exactly which codes a given call can return and "
+"under what conditions. Use this page for the general meaning and the "
+"recommended reaction; use the API reference when you need the precise "
+"contract of one function."
+msgstr ""
+"Listy ``@retval`` dla poszczególnych funkcji w dokumentacji :doc:`api` są "
+"autorytatywnym źródłem informacji o tym, dokładnie które kody dane wywołanie"
+" może zwrócić i w jakich warunkach. Tej strony używaj do poznania ogólnego "
+"znaczenia i zalecanej reakcji; z dokumentacji API korzystaj, gdy "
+"potrzebujesz precyzyjnego kontraktu konkretnej funkcji."

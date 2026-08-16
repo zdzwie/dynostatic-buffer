@@ -1,0 +1,173 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2022, Jakub Brzezowski
+# This file is distributed under the same license as the dynostatic-buffer
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: dynostatic-buffer\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-09 15:17+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Jakub Brzezowski <jakubbrzez@wp.pl>\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../api.rst:2
+msgid "API reference"
+msgstr "Dokumentacja API"
+
+#: ../../api.rst:4
+msgid ""
+"The complete public API is declared in ``dynostatic-buffer.h``. The entries "
+"below are generated from the Doxygen comments in the source via Breathe, so "
+"they stay in lock-step with the code. For prose introductions to these "
+"functions see :doc:`usage`; for the meaning of the return codes see "
+":doc:`error-codes`."
+msgstr ""
+"Kompletne publiczne API jest zadeklarowane w ``dynostatic-buffer.h``. "
+"Poniższe wpisy są generowane z komentarzy Doxygen w kodzie źródłowym za "
+"pomocą Breathe, więc pozostają w pełnej zgodności z kodem. Prozatorskie "
+"wprowadzenie do tych funkcji znajdziesz w :doc:`usage`; znaczenie kodów "
+"zwrotnych opisano w :doc:`error-codes`."
+
+#: ../../api.rst:9
+msgid "The API divides into five groups:"
+msgstr "API dzieli się na pięć grup:"
+
+#: ../../api.rst:11
+msgid ""
+":ref:`lifecycle <api-lifecycle>` — set an instance up and tear it down."
+msgstr ""
+":ref:`cykl życia <api-lifecycle>` — przygotowanie instancji i jej "
+"likwidacja."
+
+#: ../../api.rst:12
+msgid ""
+":ref:`allocation <api-allocation>` — obtain, resize and release blocks."
+msgstr ""
+":ref:`alokacja <api-allocation>` — pozyskiwanie, zmiana rozmiaru i "
+"zwalnianie bloków."
+
+#: ../../api.rst:13
+msgid ":ref:`introspection <api-introspection>` — read-only capacity queries."
+msgstr ""
+":ref:`introspekcja <api-introspection>` — zapytania tylko-do-odczytu o "
+"pojemność."
+
+#: ../../api.rst:14
+msgid ""
+":ref:`safe memory operations <api-safe-memory>` — bounds-checked writes."
+msgstr ""
+":ref:`bezpieczne operacje na pamięci <api-safe-memory>` — zapisy z kontrolą "
+"granic."
+
+#: ../../api.rst:15
+msgid ""
+":ref:`types and constants <api-types>` — the structures, enum and macros."
+msgstr ""
+":ref:`typy i stałe <api-types>` — struktury, typ wyliczeniowy i makra."
+
+#: ../../api.rst:20
+msgid "Lifecycle"
+msgstr "Cykl życia"
+
+#: ../../api.rst:22
+msgid ""
+"Initialize an instance before use and deinitialize it when done. See the "
+"lifecycle discussion in :doc:`getting-started`."
+msgstr ""
+"Zainicjalizuj instancję przed użyciem i zdeinicjalizuj ją po zakończeniu. "
+"Zobacz omówienie cyklu życia w :doc:`getting-started`."
+
+#: ../../api.rst
+msgid "Parameters"
+msgstr "Parametry"
+
+#: ../../api.rst
+msgid "Return values"
+msgstr "Wartości zwracane"
+
+#: ../../api.rst
+msgid "Pre"
+msgstr "Warunek wstępny"
+
+#: ../../api.rst:34
+msgid "Allocation"
+msgstr "Alokacja"
+
+#: ../../api.rst:36
+msgid ""
+"The core ``malloc``/``calloc``/``realloc``/``free`` family. All take the "
+"target pointer by address (``void **``): they read it as a safety guard and "
+"write the result back. See :doc:`usage` for the calling convention."
+msgstr ""
+"Podstawowa rodzina ``malloc``/``calloc``/``realloc``/``free``. Wszystkie "
+"przyjmują docelowy wskaźnik przez adres (``void **``): odczytują go jako "
+"zabezpieczenie i zapisują wynik z powrotem. Zobacz :doc:`usage`, aby poznać "
+"konwencję wywołań."
+
+#: ../../api.rst:55
+msgid "Introspection"
+msgstr "Introspekcja"
+
+#: ../../api.rst:57
+msgid ""
+"Read-only getters that report a snapshot of the instance's state, valid only"
+" until the next mutating call."
+msgstr ""
+"Tylko-do-odczytu gettery, które zgłaszają migawkę stanu instancji, ważną "
+"tylko do następnego wywołania modyfikującego."
+
+#: ../../api.rst:72
+msgid "Safe memory operations"
+msgstr "Bezpieczne operacje na pamięci"
+
+#: ../../api.rst:74
+msgid ""
+"Bounds-checked alternatives to ``memset``/``memcpy`` that validate the "
+"destination belongs to a live allocation and is large enough before writing."
+msgstr ""
+"Alternatywy dla ``memset``/``memcpy`` z kontrolą granic, które przed zapisem"
+" sprawdzają, czy miejsce docelowe należy do aktywnej alokacji i jest "
+"wystarczająco duże."
+
+#: ../../api.rst:86
+msgid "Types and constants"
+msgstr "Typy i stałe"
+
+#: ../../api.rst:88
+msgid ""
+"The instance structure, the internal bookkeeping types and the error-code "
+"constants. Most users only interact with :c:struct:`dynostatic_buffer_t` "
+"directly (to declare an instance); the allocator record and its status enum "
+"are documented because they define the invariants that explain the "
+"allocator's behaviour (see :doc:`overview`)."
+msgstr ""
+"Struktura instancji, wewnętrzne typy ewidencyjne oraz stałe kodów błędów. "
+"Większość użytkowników bezpośrednio korzysta jedynie z "
+":c:struct:`dynostatic_buffer_t` (aby zadeklarować instancję); rekord "
+"alokatora i jego typ wyliczeniowy statusu są udokumentowane, ponieważ "
+"definiują niezmienniki wyjaśniające zachowanie alokatora (zobacz "
+":doc:`overview`)."
+
+#: ../../api.rst
+msgid "Public Members"
+msgstr "Składowe publiczne"
+
+#: ../../api.rst:108
+msgid ""
+"The error-code constants (``ERROR_DS_OK`` and friends) and the compile-time "
+"configuration macros are documented on their own pages: see :doc:`error-"
+"codes` and :doc:`configuration`."
+msgstr ""
+"Stałe kodów błędów (``ERROR_DS_OK`` i pokrewne) oraz makra konfiguracyjne z "
+"etapu kompilacji są udokumentowane na osobnych stronach: zobacz :doc:`error-"
+"codes` i :doc:`configuration`."

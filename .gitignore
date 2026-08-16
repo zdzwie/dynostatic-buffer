@@ -9,6 +9,9 @@ MODULE.bazel.lock
 docs/_build/
 docs/_doxygen/
 
+#Compiled gettext translation catalogs (regenerated from the .po sources)
+docs/locale/*/LC_MESSAGES/*.mo
+
 #Coverage reports
 coverage/
 

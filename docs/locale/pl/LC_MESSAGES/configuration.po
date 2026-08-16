@@ -1,0 +1,268 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2022, Jakub Brzezowski
+# This file is distributed under the same license as the dynostatic-buffer
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: dynostatic-buffer\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-09 15:17+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Jakub Brzezowski <jakubbrzez@wp.pl>\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../configuration.rst:4
+msgid "Configuration"
+msgstr "Konfiguracja"
+
+#: ../../configuration.rst:6
+msgid ""
+"``dynostatic-buffer`` has no runtime configuration: everything is fixed at "
+"compile time through preprocessor macros. This keeps the footprint fully "
+"predictable — the size of an instance, the number of allocations it can hold"
+" and the alignment it guarantees are all known when the binary is linked."
+msgstr ""
+"``dynostatic-buffer`` nie ma konfiguracji w czasie wykonania: wszystko jest "
+"ustalane na etapie kompilacji za pomocą makr preprocesora. Dzięki temu "
+"zajmowana pamięć jest w pełni przewidywalna — rozmiar instancji, liczba "
+"alokacji, które może pomieścić, oraz gwarantowane wyrównanie są znane w "
+"momencie linkowania binarki."
+
+#: ../../configuration.rst:13
+msgid ""
+"These macros change ``sizeof(dynostatic_buffer_t)`` and the meaning of the "
+"offsets stored in it. **Every** translation unit that includes ``dynostatic-"
+"buffer.h`` — the library itself and all of your code — must be compiled with"
+" identical values. Mismatched values compile cleanly but lead to silent "
+"memory corruption. Define them once in a shared place: a CMake cache entry, "
+"the ``DYNOSTATIC_BUFFER_CPPFLAGS`` Make variable, or a ``-D`` on every "
+"compile line."
+msgstr ""
+"Te makra zmieniają ``sizeof(dynostatic_buffer_t)`` oraz znaczenie "
+"przechowywanych w niej przesunięć. **Każda** jednostka translacji "
+"dołączająca ``dynostatic-buffer.h`` — sama biblioteka oraz cały Twój kod — "
+"musi być kompilowana z identycznymi wartościami. Niezgodne wartości "
+"kompilują się bez błędów, lecz prowadzą do cichej korupcji pamięci. "
+"Zdefiniuj je raz we wspólnym miejscu: we wpisie pamięci podręcznej CMake, w "
+"zmiennej Make ``DYNOSTATIC_BUFFER_CPPFLAGS`` albo jako ``-D`` w każdym "
+"poleceniu kompilacji."
+
+#: ../../configuration.rst:21
+msgid ""
+"Each macro is guarded with ``#ifndef``, so any value you define (via CMake, "
+"KConfig, or ``-D``) before the header is included takes precedence over the "
+"default shown below."
+msgstr ""
+"Każde makro jest osłonięte ``#ifndef``, więc dowolna wartość zdefiniowana "
+"przez Ciebie (za pomocą CMake, KConfig lub ``-D``) przed dołączeniem "
+"nagłówka ma pierwszeństwo przed domyślną pokazaną poniżej."
+
+#: ../../configuration.rst:26
+msgid "Options"
+msgstr "Opcje"
+
+#: ../../configuration.rst:30
+msgid "*Default:* ``1024``."
+msgstr "*Domyślnie:* ``1024``."
+
+#: ../../configuration.rst:32
+msgid ""
+"Size in bytes of the arena embedded in each instance — the total pool every "
+"allocation is carved from. This is the dominant term in the instance's "
+"memory footprint. Must be at least :c:macro:`DS_MAX_ALLOCATION_SIZE`."
+msgstr ""
+"Rozmiar w bajtach areny osadzonej w każdej instancji — całkowitej puli, z "
+"której wykrawana jest każda alokacja. Jest to dominujący składnik zajętości "
+"pamięci przez instancję. Musi wynosić co najmniej "
+":c:macro:`DS_MAX_ALLOCATION_SIZE`."
+
+#: ../../configuration.rst:38
+msgid "*Default:* ``10``."
+msgstr "*Domyślnie:* ``10``."
+
+#: ../../configuration.rst:40
+msgid ""
+"Maximum number of allocator records, i.e. the hard cap on how many blocks "
+"(live *or* parked for reuse) can exist at once. When they are exhausted, "
+":c:func:`ds_malloc` fails with :c:macro:`ERROR_DS_NO_ALLOCATORS` regardless "
+"of how much memory is free. Must be positive."
+msgstr ""
+"Maksymalna liczba rekordów alokatora, tj. twardy limit tego, ile bloków "
+"(aktywnych *lub* zaparkowanych do ponownego użycia) może istnieć "
+"jednocześnie. Gdy się wyczerpią, :c:func:`ds_malloc` kończy się "
+"niepowodzeniem z :c:macro:`ERROR_DS_NO_ALLOCATORS` niezależnie od tego, ile "
+"pamięci jest wolnej. Musi być dodatnia."
+
+#: ../../configuration.rst:47
+msgid "*Default:* ``256``."
+msgstr "*Domyślnie:* ``256``."
+
+#: ../../configuration.rst:49
+msgid ""
+"The largest size a single allocation may request. Requests above this cap "
+"are rejected with :c:macro:`ERROR_DS_TOO_BIG_CHUNK`. Must be positive, a "
+"multiple of :c:macro:`DS_ALIGNMENT`, and no larger than "
+":c:macro:`DS_BUFFER_MEMORY_SIZE`."
+msgstr ""
+"Największy rozmiar, o który może poprosić pojedyncza alokacja. Żądania "
+"powyżej tego limitu są odrzucane z :c:macro:`ERROR_DS_TOO_BIG_CHUNK`. Musi "
+"być dodatni, wielokrotnością :c:macro:`DS_ALIGNMENT` i nie większy niż "
+":c:macro:`DS_BUFFER_MEMORY_SIZE`."
+
+#: ../../configuration.rst:55
+msgid "*Default:* ``4``."
+msgstr "*Domyślnie:* ``4``."
+
+#: ../../configuration.rst:57
+msgid ""
+"Alignment, in bytes, of every returned pointer and the rounding granularity "
+"for block capacities. Must be a power of two, at least the alignment of a "
+"32-bit type, and no larger than the platform's strictest fundamental "
+"alignment. Larger values waste more to internal rounding but satisfy "
+"stricter types (e.g. SIMD or DMA buffers)."
+msgstr ""
+"Wyrównanie, w bajtach, każdego zwracanego wskaźnika oraz granulacja "
+"zaokrąglania pojemności bloków. Musi być potęgą dwójki, co najmniej "
+"wyrównaniem typu 32-bitowego i nie większe niż najściślejsze podstawowe "
+"wyrównanie na platformie. Większe wartości marnują więcej na wewnętrzne "
+"zaokrąglanie, ale spełniają wymagania ściślejszych typów (np. buforów SIMD "
+"lub DMA)."
+
+#: ../../configuration.rst:65 ../../configuration.rst:75
+msgid "*Default:* ``0``."
+msgstr "*Domyślnie:* ``0``."
+
+#: ../../configuration.rst:67
+msgid ""
+"When set to ``1``, the full capacity of a block is zeroed on "
+":c:func:`ds_free` (and when a block is released during a relocating "
+":c:func:`ds_realloc`). Useful for scrubbing sensitive data or getting "
+"deterministic contents, at the cost of the zeroing work. Note this does "
+"**not** affect :c:func:`ds_calloc`, whose zero-fill is unconditional."
+msgstr ""
+"Gdy ustawione na ``1``, pełna pojemność bloku jest zerowana przy "
+":c:func:`ds_free` (oraz gdy blok jest zwalniany podczas przenoszącego "
+":c:func:`ds_realloc`). Przydatne do czyszczenia danych wrażliwych lub "
+"uzyskania deterministycznej zawartości, kosztem pracy związanej z "
+"zerowaniem. Uwaga: **nie** wpływa to na :c:func:`ds_calloc`, którego "
+"wypełnianie zerami jest bezwarunkowe."
+
+#: ../../configuration.rst:77
+msgid ""
+"When set to ``1``, enables the library's internal logging. Leave it off "
+"unless you are debugging the allocator itself."
+msgstr ""
+"Gdy ustawione na ``1``, włącza wewnętrzne logowanie biblioteki. Pozostaw "
+"wyłączone, chyba że debugujesz sam alokator."
+
+#: ../../configuration.rst:81
+msgid "Compile-time validation"
+msgstr "Walidacja na etapie kompilacji"
+
+#: ../../configuration.rst:83
+msgid ""
+"The header turns the constraints above into ``_Static_assert`` (C11) / "
+"``static_assert`` (C++) checks, so an inconsistent configuration fails to "
+"**compile** rather than misbehaving at runtime. The enforced invariants are:"
+msgstr ""
+"Nagłówek zamienia powyższe ograniczenia w sprawdzenia ``_Static_assert`` "
+"(C11) / ``static_assert`` (C++), więc niespójna konfiguracja nie "
+"**skompiluje się**, zamiast błędnie działać w czasie wykonania. Wymuszane "
+"niezmienniki to:"
+
+#: ../../configuration.rst:87
+msgid "``DS_ALIGNMENT`` is a power of two."
+msgstr "``DS_ALIGNMENT`` jest potęgą dwójki."
+
+#: ../../configuration.rst:88
+msgid "``DS_ALIGNMENT`` is at least the alignment required by 32-bit types."
+msgstr ""
+"``DS_ALIGNMENT`` jest co najmniej wyrównaniem wymaganym przez typy "
+"32-bitowe."
+
+#: ../../configuration.rst:89
+msgid ""
+"``DS_ALIGNMENT`` does not exceed the strictest fundamental alignment on the "
+"platform."
+msgstr ""
+"``DS_ALIGNMENT`` nie przekracza najściślejszego podstawowego wyrównania na "
+"platformie."
+
+#: ../../configuration.rst:91
+msgid "``DS_MAX_ALLOCATION_SIZE <= DS_BUFFER_MEMORY_SIZE``."
+msgstr "``DS_MAX_ALLOCATION_SIZE <= DS_BUFFER_MEMORY_SIZE``."
+
+#: ../../configuration.rst:92
+msgid ""
+"``DS_MAX_ALLOCATION_COUNT`` and ``DS_MAX_ALLOCATION_SIZE`` are both "
+"positive."
+msgstr "``DS_MAX_ALLOCATION_COUNT`` i ``DS_MAX_ALLOCATION_SIZE`` są dodatnie."
+
+#: ../../configuration.rst:93
+msgid "``DS_MAX_ALLOCATION_SIZE`` is a whole multiple of ``DS_ALIGNMENT``."
+msgstr ""
+"``DS_MAX_ALLOCATION_SIZE`` jest całkowitą wielokrotnością ``DS_ALIGNMENT``."
+
+#: ../../configuration.rst:94
+msgid ""
+"``DS_MAX_ALLOCATION_SIZE`` is small enough that the internal align-up "
+"arithmetic cannot overflow ``size_t``."
+msgstr ""
+"``DS_MAX_ALLOCATION_SIZE`` jest na tyle mały, że wewnętrzna arytmetyka "
+"zaokrąglania w górę nie może przepełnić ``size_t``."
+
+#: ../../configuration.rst:98
+msgid "Sizing an instance"
+msgstr "Dobieranie rozmiaru instancji"
+
+#: ../../configuration.rst:100
+msgid "An instance costs approximately::"
+msgstr "Instancja kosztuje w przybliżeniu::"
+
+#: ../../configuration.rst:104
+msgid ""
+"bytes (plus a small fixed header and any padding). "
+"``sizeof(ds_allocator_t)`` is two ``size_t`` fields and an enum, so on a "
+"32-bit target each record is on the order of a dozen bytes. Two forces pull "
+"in opposite directions:"
+msgstr ""
+"bajtów (plus niewielki stały nagłówek i ewentualne dopełnienie). "
+"``sizeof(ds_allocator_t)`` to dwa pola ``size_t`` i typ wyliczeniowy, więc "
+"na platformie 32-bitowej każdy rekord ma rząd kilkunastu bajtów. Dwie siły "
+"działają w przeciwnych kierunkach:"
+
+#: ../../configuration.rst:108
+msgid ""
+"**Raising** ``DS_MAX_ALLOCATION_COUNT`` lets you hold more concurrent blocks"
+" but grows every instance, even ones that never use all the slots."
+msgstr ""
+"**Zwiększenie** ``DS_MAX_ALLOCATION_COUNT`` pozwala utrzymać więcej "
+"równoczesnych bloków, ale powiększa każdą instancję, nawet te, które nigdy "
+"nie wykorzystują wszystkich slotów."
+
+#: ../../configuration.rst:110
+msgid ""
+"**Lowering** ``DS_ALIGNMENT`` reduces the bytes lost to per-block rounding "
+"but may be too weak for types with strict alignment needs."
+msgstr ""
+"**Zmniejszenie** ``DS_ALIGNMENT`` redukuje bajty tracone na zaokrąglanie "
+"każdego bloku, ale może być zbyt słabe dla typów o ścisłych wymaganiach "
+"wyrównania."
+
+#: ../../configuration.rst:113
+msgid ""
+"Because the whole footprint is compile-time constant, you can size it "
+"against a concrete budget and be confident it will not grow at runtime."
+msgstr ""
+"Ponieważ cała zajętość pamięci jest stałą czasu kompilacji, możesz dopasować"
+" ją do konkretnego budżetu i mieć pewność, że nie wzrośnie w czasie "
+"wykonania."

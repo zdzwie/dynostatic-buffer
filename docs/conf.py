@@ -61,6 +61,18 @@ extensions = ["breathe"]
 
 exclude_patterns = ["_build", "_doxygen", "Thumbs.db", ".DS_Store"]
 
+# -- Internationalization ----------------------------------------------------
+# Source language of the .rst files. Read the Docs overrides this with the
+# language configured for each translation project (e.g. ``pl`` for Polish),
+# picking up the matching catalogs under ``locale_dirs``.
+language = "en"
+
+# Translation catalogs live under ``docs/locale/<lang>/LC_MESSAGES``. Keeping
+# ``gettext_compact`` off produces one ``.po`` file per source document, which
+# keeps translations easy to review alongside their page.
+locale_dirs = ["locale/"]
+gettext_compact = False
+
 # -- Breathe configuration ---------------------------------------------------
 breathe_projects = {project: str(DOXYGEN_XML_DIR)}
 breathe_default_project = project

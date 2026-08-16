@@ -90,6 +90,15 @@
         "BUILD_DOC": "OFF",
         "BUILD_SPHINX": "ON"
       }
+    },
+    {
+      "name": "docs-pl",
+      "displayName": "Sphinx documentation build (Polish translation)",
+      "inherits": "docs",
+      "binaryDir": "${sourceDir}/build/docs-pl",
+      "cacheVariables": {
+        "SPHINX_LANGUAGE": "pl"
+      }
     }
   ],
   "buildPresets": [
@@ -98,7 +107,8 @@
     { "name": "dev-msvc", "configurePreset": "dev-msvc", "configuration": "Debug" },
     { "name": "release", "configurePreset": "release" },
     { "name": "coverage", "configurePreset": "coverage" },
-    { "name": "docs", "configurePreset": "docs" }
+    { "name": "docs", "configurePreset": "docs" },
+    { "name": "docs-pl", "configurePreset": "docs-pl" }
   ],
   "testPresets": [
     {

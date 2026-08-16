@@ -1,0 +1,364 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2022, Jakub Brzezowski
+# This file is distributed under the same license as the dynostatic-buffer
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: dynostatic-buffer\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-09 15:17+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Jakub Brzezowski <jakubbrzez@wp.pl>\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../overview.rst:2
+msgid "Design overview"
+msgstr "Przegląd projektu"
+
+#: ../../overview.rst:4
+msgid ""
+"This page explains how ``dynostatic-buffer`` works underneath the API so "
+"that you can predict its behaviour — especially its memory footprint, its "
+"failure modes and when a request will or will not succeed. If you just want "
+"to get code running, jump to :doc:`getting-started` and come back here when "
+"you need the details."
+msgstr ""
+"Ta strona wyjaśnia, jak ``dynostatic-buffer`` działa pod maską API, abyś "
+"mógł przewidzieć jego zachowanie — zwłaszcza zużycie pamięci, tryby awarii "
+"oraz to, kiedy żądanie się powiedzie, a kiedy nie. Jeśli chcesz po prostu "
+"uruchomić kod, przejdź do :doc:`getting-started` i wróć tutaj, gdy będziesz "
+"potrzebować szczegółów."
+
+#: ../../overview.rst:11
+msgid "The mental model"
+msgstr "Model myślowy"
+
+#: ../../overview.rst:13
+msgid ""
+"An instance is a single ``dynostatic_buffer_t`` structure containing two "
+"things:"
+msgstr ""
+"Instancja to pojedyncza struktura ``dynostatic_buffer_t`` zawierająca dwie "
+"rzeczy:"
+
+#: ../../overview.rst:15
+msgid ""
+"**The arena** — a byte array ``memory[DS_BUFFER_MEMORY_SIZE]`` from which "
+"all user pointers are carved. It is aligned so that every offset the "
+"allocator hands out satisfies :c:macro:`DS_ALIGNMENT`."
+msgstr ""
+"**Arenę** — tablicę bajtów ``memory[DS_BUFFER_MEMORY_SIZE]``, z której "
+"wykrawane są wszystkie wskaźniki użytkownika. Jest ona wyrównana tak, aby "
+"każde przesunięcie zwracane przez alokator spełniało "
+":c:macro:`DS_ALIGNMENT`."
+
+#: ../../overview.rst:18
+msgid ""
+"**The allocator records** — a fixed array "
+"``allocators[DS_MAX_ALLOCATION_COUNT]`` of bookkeeping entries. Each record "
+"describes one block: where it starts in the arena, its physical capacity, "
+"and its lifecycle state."
+msgstr ""
+"**Rekordy alokatora** — stałą tablicę "
+"``allocators[DS_MAX_ALLOCATION_COUNT]`` wpisów ewidencyjnych. Każdy rekord "
+"opisuje jeden blok: gdzie zaczyna się w arenie, jaką ma fizyczną pojemność "
+"oraz w jakim jest stanie cyklu życia."
+
+#: ../../overview.rst:23
+msgid ""
+"Because both arrays are inline, an instance is entirely self-contained. "
+"There is no hidden per-block header stored in the arena and no pointer "
+"chasing: the records live beside the data, not inside it."
+msgstr ""
+"Ponieważ obie tablice są wbudowane, instancja jest w pełni samowystarczalna."
+" Nie ma ukrytego nagłówka przechowywanego w arenie dla każdego bloku ani "
+"podążania za wskaźnikami: rekordy znajdują się obok danych, a nie wewnątrz "
+"nich."
+
+#: ../../overview.rst:29
+msgid ""
+"The instance is comparatively large — roughly ``DS_BUFFER_MEMORY_SIZE + "
+"DS_MAX_ALLOCATION_COUNT * sizeof(ds_allocator_t)`` bytes. On small targets, "
+"give it **static storage duration** rather than putting it on a stack. "
+"Static storage also zero-initializes it for free, which is required before "
+"the first :c:func:`ds_initialize_allocation` call."
+msgstr ""
+"Instancja jest stosunkowo duża — mniej więcej ``DS_BUFFER_MEMORY_SIZE + "
+"DS_MAX_ALLOCATION_COUNT * sizeof(ds_allocator_t)`` bajtów. Na małych "
+"platformach nadaj jej **statyczny czas trwania** zamiast umieszczać ją na "
+"stosie. Pamięć statyczna zeruje ją też za darmo, co jest wymagane przed "
+"pierwszym wywołaniem :c:func:`ds_initialize_allocation`."
+
+#: ../../overview.rst:37
+msgid "Bump allocation"
+msgstr "Alokacja przyrostowa (bump)"
+
+#: ../../overview.rst:39
+msgid ""
+"Fresh allocations are served by a **bump pointer**, ``data_head``, which "
+"marks the first byte of never-touched space. A new allocation of ``n`` bytes"
+" rounds ``n`` up to :c:macro:`DS_ALIGNMENT`, claims the region ``[data_head,"
+" data_head + aligned_n)``, records it, and advances ``data_head``. This is "
+"why allocation is cheap and its cost does not depend on how much is already "
+"allocated."
+msgstr ""
+"Nowe alokacje są obsługiwane przez **wskaźnik przyrostowy** (bump pointer), "
+"``data_head``, który wyznacza pierwszy bajt nienaruszonej dotąd przestrzeni."
+" Nowa alokacja ``n`` bajtów zaokrągla ``n`` w górę do "
+":c:macro:`DS_ALIGNMENT`, zajmuje obszar ``[data_head, data_head + "
+"aligned_n)``, zapisuje go i przesuwa ``data_head``. Dlatego alokacja jest "
+"tania, a jej koszt nie zależy od tego, ile już zaalokowano."
+
+#: ../../overview.rst:46
+msgid ""
+"The bump pointer only advances for genuinely new space. Two things can move "
+"it back or avoid moving it at all:"
+msgstr ""
+"Wskaźnik przyrostowy przesuwa się tylko dla naprawdę nowej przestrzeni. Dwie"
+" rzeczy mogą go cofnąć lub sprawić, że w ogóle się nie przesunie:"
+
+#: ../../overview.rst:49
+msgid ""
+"**Reuse.** When a block is freed in the middle of the arena, its record is "
+"*parked* (state ``DS_FREE``) instead of discarded. A later request that fits"
+" within that block's retained capacity reuses it in place — no bump, no "
+"move."
+msgstr ""
+"**Ponowne użycie.** Gdy blok w środku areny zostaje zwolniony, jego rekord "
+"jest *parkowany* (stan ``DS_FREE``) zamiast odrzucany. Późniejsze żądanie, "
+"które mieści się w zachowanej pojemności tego bloku, wykorzystuje go w "
+"miejscu — bez przyrostu, bez przenoszenia."
+
+#: ../../overview.rst:52
+msgid ""
+"**Reclamation.** When the *trailing* block (the one ending exactly at "
+"``data_head``) is freed, ``data_head`` rolls back over it, returning the "
+"space to the general pool. The rollback cascades through any adjacent "
+"already-freed blocks, so freeing in last-in-first-out order fully "
+"defragments the tail."
+msgstr ""
+"**Odzyskiwanie.** Gdy zwolniony zostaje *końcowy* blok (ten kończący się "
+"dokładnie na ``data_head``), ``data_head`` cofa się za niego, zwracając "
+"przestrzeń do wspólnej puli. Cofnięcie kaskadowo obejmuje przylegające, już "
+"zwolnione bloki, więc zwalnianie w kolejności last-in-first-out w pełni "
+"defragmentuje ogon."
+
+#: ../../overview.rst:58
+msgid "The allocator record lifecycle"
+msgstr "Cykl życia rekordu alokatora"
+
+#: ../../overview.rst:60
+msgid "Every block record moves through three states:"
+msgstr "Każdy rekord bloku przechodzi przez trzy stany:"
+
+#: ../../overview.rst:62
+msgid "``DS_NOT_USED``"
+msgstr "``DS_NOT_USED``"
+
+#: ../../overview.rst:63
+msgid ""
+"The record holds no block — either it was never used or it was reclaimed by "
+"a bump-head rollback. Its ``head`` and ``size`` are meaningless."
+msgstr ""
+"Rekord nie przechowuje żadnego bloku — albo nigdy nie był użyty, albo został"
+" odzyskany przez cofnięcie wskaźnika przyrostowego. Jego ``head`` i ``size``"
+" nie mają znaczenia."
+
+#: ../../overview.rst:66
+msgid "``DS_ALLOCATED``"
+msgstr "``DS_ALLOCATED``"
+
+#: ../../overview.rst:67
+msgid ""
+"The block is live and owned by the caller. ``head`` is its offset in the "
+"arena and ``size`` is its **physical capacity** (the requested size rounded "
+"up to :c:macro:`DS_ALIGNMENT`)."
+msgstr ""
+"Blok jest aktywny i należy do wywołującego. ``head`` to jego przesunięcie w "
+"arenie, a ``size`` to jego **fizyczna pojemność** (żądany rozmiar "
+"zaokrąglony w górę do :c:macro:`DS_ALIGNMENT`)."
+
+#: ../../overview.rst:71
+msgid "``DS_FREE``"
+msgstr "``DS_FREE``"
+
+#: ../../overview.rst:72
+msgid ""
+"The block was freed but its record is parked for reuse. ``head`` and "
+"``size`` remain valid; a later request of ``size <= capacity`` may reuse it."
+msgstr ""
+"Blok został zwolniony, ale jego rekord jest zaparkowany do ponownego użycia."
+" ``head`` i ``size`` pozostają ważne; późniejsze żądanie o ``size <= "
+"capacity`` może go wykorzystać ponownie."
+
+#: ../../overview.rst:81
+msgid ""
+"Records are recruited in index order and the array is kept as a **compact "
+"prefix**: everything past the first ``DS_NOT_USED`` slot is also "
+"``DS_NOT_USED``. Among used records, array order matches address order, and "
+"the used records tile ``[0, data_head)`` with no gaps. These invariants are "
+"what let the getters and the reclamation cascade work in a simple linear "
+"scan; see the struct documentation in the :doc:`api` reference for the "
+"precise contract."
+msgstr ""
+"Rekordy są rekrutowane w kolejności indeksów, a tablica jest utrzymywana "
+"jako **zwarty prefiks**: wszystko za pierwszym slotem ``DS_NOT_USED`` "
+"również jest ``DS_NOT_USED``. Wśród używanych rekordów kolejność w tablicy "
+"odpowiada kolejności adresów, a używane rekordy pokrywają ``[0, data_head)``"
+" bez luk. Te niezmienniki pozwalają getterom i kaskadzie odzyskiwania "
+"działać w prostym liniowym przeglądzie; dokładny kontrakt znajdziesz w "
+"dokumentacji struktury w dokumentacji :doc:`api`."
+
+#: ../../overview.rst:89
+msgid "Capacity, not requested size"
+msgstr "Pojemność, a nie żądany rozmiar"
+
+#: ../../overview.rst:91
+msgid ""
+"A block's ``size`` is its *capacity* — the requested size rounded up to the "
+"alignment — and that capacity is **retained for the life of the record**. "
+"Concretely:"
+msgstr ""
+"``size`` bloku to jego *pojemność* — żądany rozmiar zaokrąglony w górę do "
+"wyrównania — i ta pojemność jest **zachowywana przez cały czas życia "
+"rekordu**. Konkretnie:"
+
+#: ../../overview.rst:95
+msgid ""
+"Reusing a parked ``DS_FREE`` block for a smaller request does not shrink it."
+msgstr ""
+"Ponowne użycie zaparkowanego bloku ``DS_FREE`` dla mniejszego żądania nie "
+"zmniejsza go."
+
+#: ../../overview.rst:96
+msgid ""
+"Shrinking a block with :c:func:`ds_realloc` keeps the original capacity."
+msgstr ""
+"Zmniejszenie bloku za pomocą :c:func:`ds_realloc` zachowuje pierwotną "
+"pojemność."
+
+#: ../../overview.rst:98
+msgid ""
+"This matters when you read :c:func:`ds_get_memory_usage`: it sums physical "
+"capacities, so the reported occupancy can be larger than the total of the "
+"sizes you asked for. It is the honest number for \"how much of the arena is "
+"currently spoken for.\""
+msgstr ""
+"Ma to znaczenie, gdy odczytujesz :c:func:`ds_get_memory_usage`: sumuje ona "
+"pojemności fizyczne, więc zgłaszane zajęcie może być większe niż suma "
+"rozmiarów, o które prosiłeś. Jest to uczciwa liczba określająca, „jak duża "
+"część areny jest obecnie zarezerwowana”."
+
+#: ../../overview.rst:104
+msgid "Alignment"
+msgstr "Wyrównanie"
+
+#: ../../overview.rst:106
+msgid ""
+"All returned pointers are aligned to :c:macro:`DS_ALIGNMENT` (default 4 "
+"bytes). The arena base is over-aligned with ``alignas`` so that every "
+"aligned offset is also correctly aligned in absolute terms. Compile-time "
+"assertions enforce that ``DS_ALIGNMENT`` is a power of two, at least large "
+"enough for 32-bit types, and no larger than the strictest fundamental "
+"alignment on the platform. See :doc:`configuration` for how to change it and"
+" what the trade-offs are."
+msgstr ""
+"Wszystkie zwracane wskaźniki są wyrównane do :c:macro:`DS_ALIGNMENT` "
+"(domyślnie 4 bajty). Podstawa areny jest nadmiernie wyrównana za pomocą "
+"``alignas``, tak aby każde wyrównane przesunięcie było też poprawnie "
+"wyrównane w ujęciu bezwzględnym. Asercje czasu kompilacji wymuszają, że "
+"``DS_ALIGNMENT`` jest potęgą dwójki, co najmniej wystarczająco dużą dla "
+"typów 32-bitowych i nie większą niż najściślejsze podstawowe wyrównanie na "
+"platformie. Zobacz :doc:`configuration`, aby dowiedzieć się, jak je zmienić "
+"i jakie są tego kompromisy."
+
+#: ../../overview.rst:114
+msgid "Safety guarantees"
+msgstr "Gwarancje bezpieczeństwa"
+
+#: ../../overview.rst:116
+msgid ""
+"Unlike raw ``malloc``/``free``, the API validates its inputs and reports "
+"problems as :doc:`error codes <error-codes>` instead of invoking undefined "
+"behaviour:"
+msgstr ""
+"W przeciwieństwie do surowych ``malloc``/``free``, API waliduje swoje dane "
+"wejściowe i zgłasza problemy jako :doc:`kody błędów <error-codes>` zamiast "
+"wywoływać zachowanie niezdefiniowane:"
+
+#: ../../overview.rst:120
+msgid ""
+"Freeing an interior pointer, a foreign pointer, or an already-freed block is"
+" rejected without touching any state."
+msgstr ""
+"Zwolnienie wskaźnika wewnętrznego, obcego wskaźnika lub już zwolnionego "
+"bloku jest odrzucane bez naruszania jakiegokolwiek stanu."
+
+#: ../../overview.rst:122
+msgid ""
+":c:func:`ds_malloc` refuses to overwrite a pointer that already refers to a "
+"live block, catching a class of leaks (it reads ``*p_memory`` as a guard, so"
+" that argument must be ``NULL`` or a valid prior pointer, never "
+"uninitialized)."
+msgstr ""
+":c:func:`ds_malloc` odmawia nadpisania wskaźnika, który już odnosi się do "
+"aktywnego bloku, wychwytując pewną klasę wycieków (odczytuje ``*p_memory`` "
+"jako zabezpieczenie, więc ten argument musi być ``NULL`` lub prawidłowym "
+"wcześniejszym wskaźnikiem, nigdy niezainicjalizowanym)."
+
+#: ../../overview.rst:125
+msgid ""
+":c:func:`ds_safe_memory_set` and :c:func:`ds_safe_memory_copy` verify that "
+"the destination belongs to a live allocation and is large enough before "
+"writing a single byte."
+msgstr ""
+":c:func:`ds_safe_memory_set` i :c:func:`ds_safe_memory_copy` sprawdzają, czy"
+" miejsce docelowe należy do aktywnej alokacji i jest wystarczająco duże, "
+"zanim zapiszą choćby jeden bajt."
+
+#: ../../overview.rst:130
+msgid "What it does **not** do"
+msgstr "Czego **nie** robi"
+
+#: ../../overview.rst:132
+msgid ""
+"**No thread safety.** There is no internal locking. Serialize all calls on a"
+" given instance yourself; distinct instances are fully independent, so per-"
+"thread instances are a valid pattern. It is likewise not ISR-safe."
+msgstr ""
+"**Brak bezpieczeństwa wątkowego.** Nie ma wewnętrznego blokowania. Sam "
+"serializuj wszystkie wywołania na danej instancji; odrębne instancje są w "
+"pełni niezależne, więc instancje per wątek to prawidłowy wzorzec. Nie jest "
+"też bezpieczny w ISR."
+
+#: ../../overview.rst:135
+msgid ""
+"**No general defragmentation.** Only the *trailing* freed region is "
+"reclaimed. Interior fragmentation is mitigated by reuse but not eliminated; "
+"an allocation pattern that frees middle blocks and then requests larger ones"
+" can fail with :c:macro:`ERROR_DS_NO_MEMORY` even though the total free "
+"bytes would suffice."
+msgstr ""
+"**Brak ogólnej defragmentacji.** Odzyskiwany jest tylko *końcowy* zwolniony "
+"obszar. Fragmentacja wewnętrzna jest łagodzona przez ponowne użycie, lecz "
+"nie eliminowana; wzorzec alokacji, który zwalnia bloki środkowe, a następnie"
+" żąda większych, może zakończyć się niepowodzeniem z "
+":c:macro:`ERROR_DS_NO_MEMORY`, mimo że łączna liczba wolnych bajtów by "
+"wystarczyła."
+
+#: ../../overview.rst:139
+msgid ""
+"**No growth.** The arena size is fixed at compile time. There is no fallback"
+" to a system heap."
+msgstr ""
+"**Brak wzrostu.** Rozmiar areny jest ustalony na etapie kompilacji. Nie ma "
+"awaryjnego przejścia na stertę systemową."

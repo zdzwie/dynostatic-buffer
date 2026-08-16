@@ -1,0 +1,182 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2022, Jakub Brzezowski
+# This file is distributed under the same license as the dynostatic-buffer
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: dynostatic-buffer\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-09 15:17+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Jakub Brzezowski <jakubbrzez@wp.pl>\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../getting-started.rst:2
+msgid "Getting started"
+msgstr "Pierwsze kroki"
+
+#: ../../getting-started.rst:4
+msgid ""
+"This page takes you from an empty source file to a working program, then "
+"shows how to build the library into your own project."
+msgstr ""
+"Ta strona przeprowadzi Cię od pustego pliku źródłowego do działającego "
+"programu, a następnie pokaże, jak wbudować bibliotekę we własny projekt."
+
+#: ../../getting-started.rst:8
+msgid "Adding the library to your build"
+msgstr "Dodawanie biblioteki do procesu budowania"
+
+#: ../../getting-started.rst:10
+msgid ""
+"``dynostatic-buffer`` is a single translation unit (``library/dynostatic-"
+"buffer.c``) plus one public header (``library/dynostatic-buffer.h``). You "
+"can consume it with any of the three build systems the project ships with."
+msgstr ""
+"``dynostatic-buffer`` to pojedyncza jednostka translacji "
+"(``library/dynostatic-buffer.c``) oraz jeden publiczny nagłówek "
+"(``library/dynostatic-buffer.h``). Możesz z niej korzystać za pomocą "
+"dowolnego z trzech systemów budowania dostarczanych z projektem."
+
+#: ../../getting-started.rst:17
+msgid ""
+"The :ref:`configuration macros <configuration>` (``DS_BUFFER_MEMORY_SIZE``, "
+"``DS_MAX_ALLOCATION_COUNT``, ``DS_ALIGNMENT``, …) change "
+"``sizeof(dynostatic_buffer_t)``. **Every** translation unit that includes "
+"the header — the library and all of your own code — must be compiled with "
+"the same values, or the layout will disagree and you will get silent memory "
+"corruption. Set them once, in a place every consumer sees."
+msgstr ""
+":ref:`Makra konfiguracyjne <configuration>` (``DS_BUFFER_MEMORY_SIZE``, "
+"``DS_MAX_ALLOCATION_COUNT``, ``DS_ALIGNMENT``, …) zmieniają "
+"``sizeof(dynostatic_buffer_t)``. **Każda** jednostka translacji dołączająca "
+"ten nagłówek — biblioteka oraz cały Twój własny kod — musi być kompilowana z"
+" tymi samymi wartościami, w przeciwnym razie układ pamięci będzie niespójny "
+"i otrzymasz cichą korupcję pamięci. Ustaw je raz, w miejscu widocznym dla "
+"każdego konsumenta."
+
+#: ../../getting-started.rst:25
+msgid "CMake (primary)"
+msgstr "CMake (podstawowy)"
+
+#: ../../getting-started.rst:33
+msgid "Make"
+msgstr "Make"
+
+#: ../../getting-started.rst:35
+msgid ""
+"The top-level ``Makefile`` builds a static and shared library. The build "
+"settings also live in a relocatable fragment, ``library/dynostatic-"
+"buffer.mk``, that another project can ``include`` to reuse the exact compile"
+" flags:"
+msgstr ""
+"Nadrzędny ``Makefile`` buduje bibliotekę statyczną i współdzieloną. "
+"Ustawienia budowania znajdują się również w przenośnym fragmencie "
+"``library/dynostatic-buffer.mk``, który inny projekt może ``include``, aby "
+"ponownie wykorzystać dokładnie te same flagi kompilacji:"
+
+#: ../../getting-started.rst:50
+msgid ""
+"Everything is namespaced with the ``DYNOSTATIC_BUFFER_`` / ``DS_`` prefixes "
+"to avoid clashing with the host project."
+msgstr ""
+"Wszystko jest objęte przestrzenią nazw z prefiksami ``DYNOSTATIC_BUFFER_`` /"
+" ``DS_``, aby uniknąć kolizji z projektem docelowym."
+
+#: ../../getting-started.rst:54
+msgid "Bazel"
+msgstr "Bazel"
+
+#: ../../getting-started.rst:62
+msgid "See the top-level ``README`` for the full build matrix."
+msgstr "Pełną macierz budowania znajdziesz w nadrzędnym pliku ``README``."
+
+#: ../../getting-started.rst:65
+msgid "The lifecycle"
+msgstr "Cykl życia"
+
+#: ../../getting-started.rst:67
+msgid "Every instance follows the same four-phase lifecycle:"
+msgstr "Każda instancja podąża za tym samym czterofazowym cyklem życia:"
+
+#: ../../getting-started.rst:69
+msgid ""
+"**Zero-initialize** the structure. Static storage duration does this for "
+"free and is the recommended placement."
+msgstr ""
+"**Wyzeruj** strukturę. Statyczny czas trwania robi to za darmo i jest "
+"zalecanym umiejscowieniem."
+
+#: ../../getting-started.rst:71
+msgid "**Initialize** it once with :c:func:`ds_initialize_allocation`."
+msgstr ""
+"**Zainicjalizuj** ją raz za pomocą :c:func:`ds_initialize_allocation`."
+
+#: ../../getting-started.rst:72
+msgid "**Use** the allocation and query API as much as you like."
+msgstr "**Korzystaj** z API alokacji i odpytywania dowolnie często."
+
+#: ../../getting-started.rst:73
+msgid ""
+"**Deinitialize** with :c:func:`ds_deinit_allocation`, which zeroes all "
+"memory and bookkeeping. The instance can be initialized again afterwards."
+msgstr ""
+"**Deinicjalizuj** za pomocą :c:func:`ds_deinit_allocation`, które zeruje "
+"całą pamięć i ewidencję. Instancję można potem zainicjalizować ponownie."
+
+#: ../../getting-started.rst:78
+msgid ""
+"Initialization is detected via an in-band magic marker, so the structure "
+"**must** be zeroed before the first :c:func:`ds_initialize_allocation`. A "
+"stack instance full of garbage may spuriously read as \"already "
+"initialized\". Static storage duration satisfies this automatically; for any"
+" other placement, memset it to zero first."
+msgstr ""
+"Inicjalizacja jest wykrywana za pomocą wbudowanego znacznika magicznego, "
+"więc struktura **musi** być wyzerowana przed pierwszym "
+":c:func:`ds_initialize_allocation`. Instancja na stosie pełna śmieci może "
+"błędnie zostać odczytana jako „już zainicjalizowana”. Statyczny czas trwania"
+" spełnia ten warunek automatycznie; przy każdym innym umiejscowieniu "
+"najpierw wyzeruj ją za pomocą memset."
+
+#: ../../getting-started.rst:85
+msgid "A complete first program"
+msgstr "Kompletny pierwszy program"
+
+#: ../../getting-started.rst:87
+msgid ""
+"The example below is the minimal lifecycle with real error handling. Each "
+"API call returns a :c:type:`ds_err_code_t`; :c:macro:`ERROR_DS_OK` (zero) "
+"means success. See :doc:`error-codes` for the full list and :doc:`usage` for"
+" the recommended handling pattern."
+msgstr ""
+"Poniższy przykład to minimalny cykl życia z rzeczywistą obsługą błędów. "
+"Każde wywołanie API zwraca :c:type:`ds_err_code_t`; :c:macro:`ERROR_DS_OK` "
+"(zero) oznacza sukces. Pełną listę znajdziesz w :doc:`error-codes`, a "
+"zalecany wzorzec obsługi w :doc:`usage`."
+
+#: ../../getting-started.rst:131
+msgid "Running the bundled examples"
+msgstr "Uruchamianie dołączonych przykładów"
+
+#: ../../getting-started.rst:133
+msgid ""
+"The ``examples/`` directory contains four small programs, each focused on "
+"one facet of the API. After a CMake build they land next to the library:"
+msgstr ""
+"Katalog ``examples/`` zawiera cztery małe programy, z których każdy skupia "
+"się na jednym aspekcie API. Po zbudowaniu w CMake lądują one obok "
+"biblioteki:"
+
+#: ../../getting-started.rst:143
+msgid "They are the same programs the :doc:`usage` guide walks through."
+msgstr "Są to te same programy, które omawia przewodnik :doc:`usage`."

@@ -1,0 +1,151 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2022, Jakub Brzezowski
+# This file is distributed under the same license as the dynostatic-buffer
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: dynostatic-buffer\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-09 15:17+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Jakub Brzezowski <jakubbrzez@wp.pl>\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../index.rst:65
+msgid "Contents:"
+msgstr "Spis treści:"
+
+#: ../../index.rst:2
+msgid "dynostatic-buffer"
+msgstr "dynostatic-buffer"
+
+#: ../../index.rst:4
+msgid ""
+"Dynamic memory allocation served out of a fixed, statically declared buffer."
+msgstr ""
+"Dynamiczna alokacja pamięci realizowana ze stałego, statycznie "
+"zadeklarowanego bufora."
+
+#: ../../index.rst:6
+msgid ""
+"``dynostatic-buffer`` gives you the ergonomics of "
+"``malloc``/``calloc``/``realloc``/``free`` without a system heap. Every byte"
+" it hands out comes from an arena embedded directly inside a "
+":c:struct:`dynostatic_buffer_t` instance, so allocation touches no global "
+"state, calls no operating-system services, and can be reasoned about "
+"statically. That makes it a good fit for:"
+msgstr ""
+"``dynostatic-buffer`` zapewnia ergonomię "
+"``malloc``/``calloc``/``realloc``/``free`` bez sterty systemowej. Każdy "
+"zwracany bajt pochodzi z areny osadzonej bezpośrednio w instancji "
+":c:struct:`dynostatic_buffer_t`, więc alokacja nie dotyka żadnego stanu "
+"globalnego, nie wywołuje usług systemu operacyjnego i można o niej "
+"wnioskować statycznie. Dzięki temu dobrze sprawdza się w:"
+
+#: ../../index.rst:13
+msgid ""
+"**Bare-metal and RTOS firmware** where ``malloc`` is unavailable, forbidden "
+"by a coding standard (MISRA and friends), or simply too unpredictable."
+msgstr ""
+"**Oprogramowaniu bare-metal i RTOS**, gdzie ``malloc`` jest niedostępny, "
+"zabroniony przez standard kodowania (MISRA i pokrewne) lub po prostu zbyt "
+"nieprzewidywalny."
+
+#: ../../index.rst:15
+msgid ""
+"**Safety- and certification-oriented code** that must bound its worst-case "
+"memory footprint at build time."
+msgstr ""
+"**Kodzie zorientowanym na bezpieczeństwo i certyfikację**, który musi "
+"ograniczać pesymistyczne zużycie pamięci już na etapie kompilacji."
+
+#: ../../index.rst:17
+msgid ""
+"**Deterministic subsystems** — parsers, protocol stacks, command buffers — "
+"that want dynamic-looking allocation with a hard, known upper limit."
+msgstr ""
+"**Deterministycznych podsystemach** — parserach, stosach protokołów, "
+"buforach poleceń — które potrzebują alokacji wyglądającej dynamicznie, lecz "
+"z twardym, znanym górnym limitem."
+
+#: ../../index.rst:21
+msgid "Highlights"
+msgstr "Najważniejsze cechy"
+
+#: ../../index.rst:23
+msgid ""
+"**No heap, no globals.** All state lives inside the instance; place it in "
+"static storage, on a stack, or inside another object. Multiple independent "
+"instances happily coexist."
+msgstr ""
+"**Bez sterty, bez zmiennych globalnych.** Cały stan znajduje się wewnątrz "
+"instancji; umieść ją w pamięci statycznej, na stosie lub wewnątrz innego "
+"obiektu. Wiele niezależnych instancji bez problemu współistnieje."
+
+#: ../../index.rst:26
+msgid ""
+"**Bounded and configurable.** The arena size, the maximum number of live "
+"allocations, the per-allocation cap and the alignment are all fixed at "
+"compile time (see :doc:`configuration`)."
+msgstr ""
+"**Ograniczony i konfigurowalny.** Rozmiar areny, maksymalna liczba aktywnych"
+" alokacji, limit pojedynczej alokacji oraz wyrównanie są ustalane na etapie "
+"kompilacji (zobacz :doc:`configuration`)."
+
+#: ../../index.rst:29
+msgid ""
+"**Safer than raw ``malloc``.** Double frees, interior-pointer frees, foreign"
+" pointers and leaking overwrites are detected and reported as error codes "
+"rather than corrupting memory. Optional bounds-checked writes "
+"(:c:func:`ds_safe_memory_set`, :c:func:`ds_safe_memory_copy`) guard against "
+"buffer overruns."
+msgstr ""
+"**Bezpieczniejszy niż surowy ``malloc``.** Podwójne zwolnienia, zwolnienia "
+"wskaźnika wewnętrznego, obce wskaźniki oraz nadpisania powodujące wycieki są"
+" wykrywane i zgłaszane jako kody błędów, zamiast uszkadzać pamięć. "
+"Opcjonalne zapisy z kontrolą granic (:c:func:`ds_safe_memory_set`, "
+":c:func:`ds_safe_memory_copy`) chronią przed przepełnieniem bufora."
+
+#: ../../index.rst:34
+msgid ""
+"**Introspectable.** Query live occupancy, free allocator slots and the "
+"largest currently satisfiable request before you commit to an allocation."
+msgstr ""
+"**Introspektywny.** Sprawdź bieżące zajęcie, wolne sloty alokatora oraz "
+"największe aktualnie możliwe do spełnienia żądanie, zanim zdecydujesz się na"
+" alokację."
+
+#: ../../index.rst:38
+msgid "Quick taste"
+msgstr "Szybki przykład"
+
+#: ../../index.rst:62
+msgid ""
+"Read :doc:`getting-started` for the same program with proper error handling "
+"and build instructions, and :doc:`overview` for how the allocator works "
+"underneath."
+msgstr ""
+"Zapoznaj się z :doc:`getting-started`, aby zobaczyć ten sam program z "
+"właściwą obsługą błędów i instrukcjami budowania, oraz z :doc:`overview`, "
+"aby dowiedzieć się, jak alokator działa od środka."
+
+#: ../../index.rst:77
+msgid "Indices and tables"
+msgstr "Indeksy i tabele"
+
+#: ../../index.rst:79
+msgid ":ref:`genindex`"
+msgstr ":ref:`genindex`"
+
+#: ../../index.rst:80
+msgid ":ref:`search`"
+msgstr ":ref:`search`"

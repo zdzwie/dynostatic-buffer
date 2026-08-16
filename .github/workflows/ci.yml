@@ -162,8 +162,15 @@ jobs:
       - name: Install documentation dependencies
         run: pip install -r docs/requirements.txt
 
-      - name: Build documentation
+      - name: Build documentation (English)
         run: cmake --preset docs && cmake --build --preset docs
+
+      - name: Build documentation (Polish)
+        # Build the Polish translation and nest it under /pl/ of the English
+        # site so GitHub Pages serves both from a single artifact.
+        run: |
+          cmake --preset docs-pl && cmake --build --preset docs-pl
+          mv build/docs-pl/sphinx build/docs/sphinx/pl
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
