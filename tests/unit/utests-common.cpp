@@ -4,7 +4,7 @@
  * @copyright Copyright (c) 2022
  *
  * @brief Function using for all unit tests files.
- * @version 0.1
+ * @version 1.0
  * @date 2022-07-17
  *
  */

@@ -4,7 +4,7 @@
  * @copyright Copyright (c) 2026
  *
  * @brief Shared fixture and helpers for dynostatic-buffer unit tests.
- * @version 0.1
+ * @version 1.0
  * @date 2026-07-03
  */
 #pragma once

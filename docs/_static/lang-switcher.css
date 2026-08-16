@@ -1,0 +1,18 @@
+/* Language switcher button, injected into the RTD theme sidebar search area
+   by lang-switcher.js. */
+.wy-side-nav-search .lang-switcher {
+  display: inline-block;
+  margin-top: 0.75em;
+  padding: 0.25em 0.9em;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 3px;
+  color: #fff;
+  font-size: 0.85em;
+  line-height: 1.6;
+  text-decoration: none;
+}
+
+.wy-side-nav-search .lang-switcher:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}

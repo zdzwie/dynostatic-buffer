@@ -9,7 +9,7 @@
  *        block carries a derivable capacity LOWER BOUND — the storm asserts
  *        only what the public contract guarantees (lesson learned from the
  *        capacity-retention model bug in utests-monte-carlo.cpp).
- * @version 0.1
+ * @version 1.0
  * @date 2026-07-14
  */
 
