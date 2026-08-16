@@ -7,7 +7,7 @@
  *        malloc/free operations checked against a shadow model, with
  *        ds_get_max_new_allocation_size() as the success oracle and a
  *        no-permanent-fragmentation end-state assertion.
- * @version 0.1
+ * @version 1.0
  * @date 2026-07-13
  */
 #include "utests-common.hpp"

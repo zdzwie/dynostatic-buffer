@@ -54,7 +54,7 @@ generate_doxygen_xml()
 project = "dynostatic-buffer"
 copyright = "2022, Jakub Brzezowski"
 author = "Jakub Brzezowski"
-release = "0.1"
+release = "1.0"
 
 # -- General configuration ---------------------------------------------------
 extensions = ["breathe"]
@@ -80,3 +80,9 @@ breathe_domain_by_extension = {"h": "c"}
 
 # -- HTML output -------------------------------------------------------------
 html_theme = "sphinx_rtd_theme"
+
+# The language switcher toggles between the English site (served at the root)
+# and the Polish translation (nested under ``pl/``) on the GitHub Pages build.
+html_static_path = ["_static"]
+html_css_files = ["lang-switcher.css"]
+html_js_files = ["lang-switcher.js"]

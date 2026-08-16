@@ -7,7 +7,7 @@ BUILD.bazel files in library/, examples/ and tests/.
 
 module(
     name = "dynostatic_buffer",
-    version = "0.1",
+    version = "1.0",
 )
 
 bazel_dep(name = "rules_cc", version = "0.2.17")

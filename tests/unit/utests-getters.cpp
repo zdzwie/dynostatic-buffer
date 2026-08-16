@@ -5,7 +5,7 @@
  *
  * @brief Unit tests for diagnostic getters: ds_get_max_new_allocation_size
  *        and ds_get_free_allocator_cnt.
- * @version 0.1
+ * @version 1.0
  * @date 2026-07-10
  */
 #include "utests-common.hpp"

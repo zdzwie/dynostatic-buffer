@@ -4,7 +4,7 @@
  * @copyright Copyright (c) 2026
  *
  * @brief Unit tests for ds_safe_memory_set — bounded fill of live blocks.
- * @version 0.1
+ * @version 1.0
  * @date 2026-07-12
  */
 #include "utests-common.hpp"

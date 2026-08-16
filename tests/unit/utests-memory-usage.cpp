@@ -4,7 +4,7 @@
  * @copyright Copyright (c) 2026
  *
  * @brief Unit tests for ds_get_memory_usage function behaviour.
- * @version 0.1
+ * @version 1.0
  * @date 2026-07-05
  */
 #include "utests-common.hpp"
