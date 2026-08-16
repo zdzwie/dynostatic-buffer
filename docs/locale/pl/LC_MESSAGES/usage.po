@@ -1,0 +1,307 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2022, Jakub Brzezowski
+# This file is distributed under the same license as the dynostatic-buffer
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: dynostatic-buffer\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-09 15:17+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Jakub Brzezowski <jakubbrzez@wp.pl>\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../usage.rst:2
+msgid "Usage guide"
+msgstr "Przewodnik użytkowania"
+
+#: ../../usage.rst:4
+msgid ""
+"A task-oriented tour of the API. Every snippet assumes an initialized "
+"instance (see :doc:`getting-started`) and, for brevity, omits some error "
+"checks that production code should keep. The full, compilable versions live "
+"in the ``examples/`` directory."
+msgstr ""
+"Zorientowany na zadania przegląd API. Każdy fragment zakłada "
+"zainicjalizowaną instancję (zobacz :doc:`getting-started`) i dla zwięzłości "
+"pomija część sprawdzeń błędów, które kod produkcyjny powinien zachować. "
+"Pełne, kompilowalne wersje znajdują się w katalogu ``examples/``."
+
+#: ../../usage.rst:10
+msgid "The calling convention"
+msgstr "Konwencja wywołań"
+
+#: ../../usage.rst:12
+msgid ""
+"A few conventions run through the whole API and are worth internalizing "
+"once:"
+msgstr "Kilka konwencji przewija się przez całe API i warto je raz przyswoić:"
+
+#: ../../usage.rst:14
+msgid ""
+"**Everything returns an error code.** Functions return a "
+":c:type:`ds_err_code_t`; :c:macro:`ERROR_DS_OK` (which is ``0``) means "
+"success. Nothing is returned through the function value except status."
+msgstr ""
+"**Wszystko zwraca kod błędu.** Funkcje zwracają :c:type:`ds_err_code_t`; "
+":c:macro:`ERROR_DS_OK` (czyli ``0``) oznacza sukces. Poprzez wartość funkcji"
+" nie jest zwracane nic poza statusem."
+
+#: ../../usage.rst:17
+msgid ""
+"**Pointers are passed by address.** Allocating and freeing functions take a "
+"``void **`` so they can both read your current pointer (as a safety guard) "
+"and write the new one back. On success :c:func:`ds_malloc` writes the block "
+"address into ``*p_memory``; :c:func:`ds_free` writes ``NULL``."
+msgstr ""
+"**Wskaźniki są przekazywane przez adres.** Funkcje alokujące i zwalniające "
+"przyjmują ``void **``, dzięki czemu mogą zarówno odczytać Twój bieżący "
+"wskaźnik (jako zabezpieczenie), jak i zapisać z powrotem nowy. Przy "
+"powodzeniu :c:func:`ds_malloc` zapisuje adres bloku do ``*p_memory``; "
+":c:func:`ds_free` zapisuje ``NULL``."
+
+#: ../../usage.rst:21
+msgid ""
+"**On failure, outputs are left untouched.** If a call returns anything other"
+" than ``ERROR_DS_OK``, your pointer and the instance state are unchanged. "
+"That makes it safe to branch on the error without cleaning up half-done "
+"work."
+msgstr ""
+"**W razie niepowodzenia dane wyjściowe pozostają nietknięte.** Jeśli "
+"wywołanie zwróci cokolwiek innego niż ``ERROR_DS_OK``, Twój wskaźnik i stan "
+"instancji pozostają niezmienione. Dzięki temu można bezpiecznie rozgałęzić "
+"kod na błędzie bez sprzątania częściowo wykonanej pracy."
+
+#: ../../usage.rst:25
+msgid "A robust way to handle the return code is a small helper macro:"
+msgstr ""
+"Solidnym sposobem obsługi kodu zwrotnego jest niewielkie makro pomocnicze:"
+
+#: ../../usage.rst:39
+msgid "Allocating and freeing"
+msgstr "Alokowanie i zwalnianie"
+
+#: ../../usage.rst:41
+msgid ""
+":c:func:`ds_malloc` allocates at least ``size`` bytes and writes the block "
+"address into ``*p_memory``. The input pointer must be ``NULL`` (or a valid "
+"prior pointer you are done with) — never uninitialized — because the "
+"function reads it to reject overwriting a live block:"
+msgstr ""
+":c:func:`ds_malloc` alokuje co najmniej ``size`` bajtów i zapisuje adres "
+"bloku do ``*p_memory``. Wskaźnik wejściowy musi być ``NULL`` (lub "
+"prawidłowym wcześniejszym wskaźnikiem, z którego już nie korzystasz) — nigdy"
+" niezainicjalizowany — ponieważ funkcja odczytuje go, aby odrzucić "
+"nadpisanie aktywnego bloku:"
+
+#: ../../usage.rst:54
+msgid ""
+":c:func:`ds_free` accepts only a pointer to the **start** of a live block. "
+"Interior pointers, foreign pointers and double frees are rejected "
+"(:c:macro:`ERROR_DS_ALLOCATOR_NOT_FOUND` or "
+":c:macro:`ERROR_DS_MEMORY_OUT_OF_DS`) without corrupting anything. On "
+"success it NULLs your pointer, which is what makes reusing the same variable"
+" safe."
+msgstr ""
+":c:func:`ds_free` przyjmuje wyłącznie wskaźnik na **początek** aktywnego "
+"bloku. Wskaźniki wewnętrzne, obce oraz podwójne zwolnienia są odrzucane "
+"(:c:macro:`ERROR_DS_ALLOCATOR_NOT_FOUND` lub "
+":c:macro:`ERROR_DS_MEMORY_OUT_OF_DS`) bez uszkadzania czegokolwiek. Przy "
+"powodzeniu funkcja zeruje Twój wskaźnik, co sprawia, że ponowne użycie tej "
+"samej zmiennej jest bezpieczne."
+
+#: ../../usage.rst:61
+msgid "Zero-initialized arrays with ``ds_calloc``"
+msgstr "Wyzerowane tablice za pomocą ``ds_calloc``"
+
+#: ../../usage.rst:63
+msgid ""
+":c:func:`ds_calloc` allocates ``len * size_of_elem`` bytes and zero-fills "
+"them. The multiplication is overflow-checked, and the zeroing is "
+"**unconditional** — it happens regardless of the :c:macro:`DS_ZERO_ON_FREE` "
+"setting."
+msgstr ""
+":c:func:`ds_calloc` alokuje ``len * size_of_elem`` bajtów i wypełnia je "
+"zerami. Mnożenie jest sprawdzane pod kątem przepełnienia, a zerowanie jest "
+"**bezwarunkowe** — następuje niezależnie od ustawienia "
+":c:macro:`DS_ZERO_ON_FREE`."
+
+#: ../../usage.rst:75
+msgid "Resizing with ``ds_realloc``"
+msgstr "Zmiana rozmiaru za pomocą ``ds_realloc``"
+
+#: ../../usage.rst:77
+msgid ""
+":c:func:`ds_realloc` resizes a block, preserving its contents up to the "
+"smaller of the old and new sizes. It follows C ``realloc`` semantics with a "
+"few deliberate, safer deviations:"
+msgstr ""
+":c:func:`ds_realloc` zmienia rozmiar bloku, zachowując jego zawartość aż do "
+"mniejszego z rozmiarów: starego i nowego. Podąża za semantyką C-owego "
+"``realloc`` z kilkoma celowymi, bezpieczniejszymi odstępstwami:"
+
+#: ../../usage.rst:81
+msgid "``size == 0`` behaves like :c:func:`ds_free`."
+msgstr "``size == 0`` zachowuje się jak :c:func:`ds_free`."
+
+#: ../../usage.rst:82
+msgid "``*p_memory == NULL`` behaves like :c:func:`ds_malloc`."
+msgstr "``*p_memory == NULL`` zachowuje się jak :c:func:`ds_malloc`."
+
+#: ../../usage.rst:83
+msgid ""
+"**Shrinking** happens in place, the pointer is unchanged, and the original "
+"capacity is retained (occupancy does not drop)."
+msgstr ""
+"**Zmniejszanie** odbywa się w miejscu, wskaźnik pozostaje niezmieniony, a "
+"pierwotna pojemność jest zachowywana (zajęcie nie spada)."
+
+#: ../../usage.rst:85
+msgid ""
+"**Growing the most recently placed block** extends it in place when the "
+"trailing space allows — no copy, pointer unchanged."
+msgstr ""
+"**Powiększanie ostatnio umieszczonego bloku** rozszerza go w miejscu, gdy "
+"pozwala na to przestrzeń końcowa — bez kopiowania, wskaźnik niezmieniony."
+
+#: ../../usage.rst:87
+msgid ""
+"**Growing otherwise** allocates a new block, copies the contents, and frees "
+"the old one; the pointer changes. This transiently needs a spare allocator "
+"record for the old+new pair."
+msgstr ""
+"**Powiększanie w pozostałych przypadkach** alokuje nowy blok, kopiuje "
+"zawartość i zwalnia stary; wskaźnik się zmienia. Wymaga to chwilowo "
+"zapasowego rekordu alokatora dla pary stary+nowy."
+
+#: ../../usage.rst:90
+msgid ""
+"A pointer that is not the start of a live block is **rejected**, unlike C "
+"``realloc``'s undefined behaviour."
+msgstr ""
+"Wskaźnik, który nie jest początkiem aktywnego bloku, jest **odrzucany**, w "
+"przeciwieństwie do niezdefiniowanego zachowania C-owego ``realloc``."
+
+#: ../../usage.rst:93
+msgid ""
+"Always assign the result back through the same pointer, because in the "
+"general case the block moves:"
+msgstr ""
+"Zawsze przypisuj wynik z powrotem przez ten sam wskaźnik, ponieważ w ogólnym"
+" przypadku blok się przemieszcza:"
+
+#: ../../usage.rst:104
+msgid ""
+"On any failure the original block and pointer are left fully intact, so the "
+"common ``p = realloc(p, ...)`` footgun (losing the only pointer to the old "
+"block on failure) does not apply here — but assigning back is still the "
+"right habit."
+msgstr ""
+"Przy każdym niepowodzeniu pierwotny blok i wskaźnik pozostają w pełni "
+"nienaruszone, więc typowa pułapka ``p = realloc(p, ...)`` (utrata jedynego "
+"wskaźnika na stary blok przy niepowodzeniu) tutaj nie występuje — mimo to "
+"przypisywanie z powrotem to wciąż właściwy nawyk."
+
+#: ../../usage.rst:110
+msgid "Inspecting an instance"
+msgstr "Badanie instancji"
+
+#: ../../usage.rst:112
+msgid ""
+"Three read-only getters let you reason about capacity before committing to "
+"an allocation. Each returns a **snapshot** that is only valid until the next"
+" mutating call."
+msgstr ""
+"Trzy tylko-do-odczytu gettery pozwalają wnioskować o pojemności, zanim "
+"zdecydujesz się na alokację. Każdy zwraca **migawkę** ważną tylko do "
+"następnego wywołania modyfikującego."
+
+#: ../../usage.rst:116
+msgid ""
+":c:func:`ds_get_memory_usage` — arena occupancy as a ``0..100`` percentage, "
+"summing physical capacities of live blocks."
+msgstr ""
+":c:func:`ds_get_memory_usage` — zajęcie areny jako procent w zakresie "
+"``0..100``, sumujące fizyczne pojemności aktywnych bloków."
+
+#: ../../usage.rst:118
+msgid ""
+":c:func:`ds_get_free_allocator_cnt` — allocator slots not holding a live "
+"block. This is an *upper bound* on further concurrent allocations, not a "
+"guarantee any specific one will succeed."
+msgstr ""
+":c:func:`ds_get_free_allocator_cnt` — sloty alokatora nieprzechowujące "
+"aktywnego bloku. Jest to *górne ograniczenie* liczby dalszych równoczesnych "
+"alokacji, a nie gwarancja, że jakakolwiek konkretna się powiedzie."
+
+#: ../../usage.rst:121
+msgid ""
+":c:func:`ds_get_max_new_allocation_size` — the largest ``size`` for which an"
+" immediate :c:func:`ds_malloc` would succeed right now, considering both "
+"reuse and fresh bump space."
+msgstr ""
+":c:func:`ds_get_max_new_allocation_size` — największy ``size``, dla którego "
+"natychmiastowe :c:func:`ds_malloc` powiodłoby się w tej chwili, z "
+"uwzględnieniem zarówno ponownego użycia, jak i świeżej przestrzeni "
+"przyrostowej."
+
+#: ../../usage.rst:135
+msgid ""
+"A ``max_new_alloc`` of ``0`` means nothing can be allocated at any size; use"
+" the other two getters to tell whether it is the memory or the allocator "
+"slots that are exhausted."
+msgstr ""
+"Wartość ``max_new_alloc`` równa ``0`` oznacza, że nie da się zaalokować "
+"niczego w żadnym rozmiarze; użyj dwóch pozostałych getterów, aby ustalić, "
+"czy wyczerpana została pamięć, czy sloty alokatora."
+
+#: ../../usage.rst:140
+msgid "Bounds-checked writes"
+msgstr "Zapisy z kontrolą granic"
+
+#: ../../usage.rst:142
+msgid ""
+":c:func:`ds_safe_memory_set` and :c:func:`ds_safe_memory_copy` are guarded "
+"alternatives to ``memset``/``memcpy``. Before writing, they verify that the "
+"destination is part of a live allocation in the instance and that the "
+"allocation is large enough. An over-long write is rejected with "
+":c:macro:`ERROR_DS_NO_MEMORY` and the destination is left untouched — a "
+"cheap guard against the stray writes that are so painful to debug on "
+"embedded targets."
+msgstr ""
+":c:func:`ds_safe_memory_set` i :c:func:`ds_safe_memory_copy` to "
+"zabezpieczone alternatywy dla ``memset``/``memcpy``. Przed zapisem "
+"sprawdzają, czy miejsce docelowe jest częścią aktywnej alokacji w instancji "
+"i czy alokacja jest wystarczająco duża. Zbyt długi zapis jest odrzucany z "
+":c:macro:`ERROR_DS_NO_MEMORY`, a miejsce docelowe pozostaje nietknięte — "
+"tani mechanizm zabezpieczający przed błądzącymi zapisami, których "
+"debugowanie na platformach wbudowanych jest tak bolesne."
+
+#: ../../usage.rst:164
+msgid "Putting it together"
+msgstr "Złożenie w całość"
+
+#: ../../usage.rst:166
+msgid ""
+"The four ideas above compose into the typical pattern for a constrained "
+"system: initialize once into static storage, allocate with the pointer-by-"
+"address convention, check every error code, optionally introspect before "
+"large requests, and tear down with :c:func:`ds_deinit_allocation`. For the "
+"exact semantics of every parameter and return value, continue to the "
+":doc:`api` reference."
+msgstr ""
+"Cztery powyższe idee składają się w typowy wzorzec dla systemu z "
+"ograniczeniami: zainicjalizuj raz w pamięci statycznej, alokuj zgodnie z "
+"konwencją wskaźnika przez adres, sprawdzaj każdy kod błędu, opcjonalnie "
+"dokonaj introspekcji przed dużymi żądaniami i posprzątaj za pomocą "
+":c:func:`ds_deinit_allocation`. Dokładną semantykę każdego parametru i "
+"wartości zwracanej znajdziesz w dokumentacji :doc:`api`."

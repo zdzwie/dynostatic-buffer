@@ -3,3 +3,7 @@
 sphinx>=7.0
 sphinx-rtd-theme>=2.0
 breathe>=4.35
+# Maintainer tooling for the translation catalogs under docs/locale/ (see the
+# "Translations" section in docs/README.md). Sphinx compiles the .po files on
+# its own, so this is only needed when extracting/updating the catalogs.
+sphinx-intl>=2.2
