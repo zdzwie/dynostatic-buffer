@@ -342,6 +342,10 @@ static ds_err_code_t ds_find_allocator_containing(const dynostatic_buffer_t *p_d
             break;
         }
 
+        if (offset < (p_ds_buffer->allocators[iter].head)) {
+            continue; /* offset is before this block, so it cannot be inside it */
+        }
+
         const size_t offset_in_block = offset - p_ds_buffer->allocators[iter].head;
 
         if (offset_in_block < p_ds_buffer->allocators[iter].size) {
