@@ -364,7 +364,7 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  * @param[in, out] p_memory In: NULL or address of a live block. Out: address
  *                          of the resized block (may differ from the input),
  *                          NULL after size == 0, unchanged on failure.
- * @param[in] size New size in bytes (0..DS_MAX_ALLOCATION_SIZE).
+ * @param[in] requested_size New size in bytes (0..DS_MAX_ALLOCATION_SIZE).
  *
  * @retval ERROR_DS_OK Operation completed as described above.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
@@ -378,7 +378,7 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  * @retval ERROR_DS_NO_ALLOCATORS No free record for the moved block.
  * @retval ERROR_DS_NO_MEMORY No region can hold the grown block.
  */
-ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size);
+ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t requested_size);
 
 /**
  * @brief Get the arena occupancy as a percentage (0..100, rounded down).

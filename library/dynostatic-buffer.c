@@ -232,6 +232,17 @@ static inline size_t ds_align_up(size_t size);
  */
 static void ds_reclaim_trailing(dynostatic_buffer_t *p_ds_buffer, size_t alloc_idx);
 
+/**
+ * @brief Return the smaller of two size_t values.
+ *
+ * @param[in] a First value.
+ * @param[in] b Second value.
+ *
+ * @return The smaller of a and b.
+ */
+static inline size_t ds_size_min(size_t a, size_t b);
+
+
 /*---Static-Function-Implementation---*/
 
 static inline void ds_memset(void *p_dest, size_t dest_size, uint8_t sign_to_set, size_t size_to_set)
@@ -380,6 +391,11 @@ static void ds_reclaim_trailing(dynostatic_buffer_t *p_ds_buffer, size_t alloc_i
     }
 }
 
+static inline size_t ds_size_min(size_t a, size_t b)
+{
+    return (a < b) ? a : b;
+}
+
 /*---Public-Function-Implementation---*/
 
 ds_err_code_t ds_initialize_allocation(dynostatic_buffer_t *p_ds_buffer)
@@ -489,7 +505,7 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
     return ERROR_DS_OK;
 }
 
-ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size)
+ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t requested_size)
 {
     if ((NULL == p_ds_buffer) || (NULL == p_memory)) {
         return ERROR_DS_INVALID_ARG;
@@ -499,15 +515,15 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
         return ERROR_DS_NO_INIT;
     }
 
-    if (size == 0u) {
+    if (requested_size == 0u) {
         return ds_free(p_ds_buffer, p_memory);
     }
 
     if (*p_memory == NULL) {
-        return ds_malloc(p_ds_buffer, p_memory, size);
+        return ds_malloc(p_ds_buffer, p_memory, requested_size);
     }
 
-    if (size > DS_MAX_ALLOCATION_SIZE) {
+    if (requested_size > DS_MAX_ALLOCATION_SIZE) {
         return ERROR_DS_TOO_BIG_CHUNK;
     }
 
@@ -518,15 +534,14 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
     }
 
     const size_t head = p_ds_buffer->allocators[alloc_idx].head;
-    const size_t capacity = p_ds_buffer->allocators[alloc_idx].size;
-    const size_t aligned_size = ds_align_up(size);
-
-    if (aligned_size <= capacity) {
+    const size_t old_size = p_ds_buffer->allocators[alloc_idx].size;
+    const size_t aligned_size = ds_align_up(requested_size);
+    if (aligned_size <= old_size) {
         return ERROR_DS_OK; /* shrink or fit: in place, capacity retained (no split) */
     }
 
     /* Trailing-block fast path: grow in place by advancing the bump head. */
-    if (((head + capacity) == p_ds_buffer->data_head)
+    if (((head + old_size) == p_ds_buffer->data_head)
         && ((DS_BUFFER_MEMORY_SIZE - head) >= aligned_size)) {
         p_ds_buffer->data_head = head + aligned_size;
         p_ds_buffer->allocators[alloc_idx].size = aligned_size;
@@ -535,12 +550,13 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
 
     /* Move path: allocate FIRST, so any failure leaves the original intact. */
     void *p_new = NULL;
-    ret = ds_malloc(p_ds_buffer, &p_new, size);
+    ret = ds_malloc(p_ds_buffer, &p_new, requested_size);
     if (ret != ERROR_DS_OK) {
         return ret;
     }
 
-    ds_memcpy(p_new, aligned_size, *p_memory, capacity);
+    const size_t copy_size = ds_size_min(old_size, requested_size);
+    ds_memcpy(p_new, aligned_size, *p_memory, copy_size);
 
     ret = ds_free(p_ds_buffer, p_memory); /* zeroes old block under DS_ZERO_ON_FREE; may cascade */
     DS_ASSERT(ret == ERROR_DS_OK);
