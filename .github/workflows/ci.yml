@@ -119,6 +119,30 @@ jobs:
       - name: Run tests
         run: ctest --preset ${{ matrix.preset }}
 
+  # The second unit-test suite (tests/unit/ceedling) is a 1:1 port of the
+  # GoogleTest one to Ceedling/Unity, verifying the library through a pure-C,
+  # embedded-style toolchain. It gets its own job rather than a row in the
+  # unit-tests matrix above: that matrix is entirely CMake-preset driven
+  # (configure/build/ctest), and Ceedling shares none of those steps.
+  unit-tests-ceedling:
+    name: Unit tests (Ceedling)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      # Pinned deliberately: keep in sync with :project ↳ :ceedling_version
+      # in tests/unit/ceedling/project.yml.
+      - name: Install Ceedling
+        run: gem install ceedling -v 1.1.7 --no-document
+
+      - name: Run tests
+        working-directory: tests/unit/ceedling
+        run: ceedling test:all
+
   coverage:
     name: Test coverage
     runs-on: ubuntu-latest
