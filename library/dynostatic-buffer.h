@@ -162,13 +162,19 @@ typedef enum {
  * 3. Gapless partition: non-DS_NOT_USED records tile [0, data_head) exactly:
  *    head[0] == 0 and head[i+1] == head[i] + size[i]. In particular the
  *    block ending at data_head always sits at the highest touched index.
+ * 4. Payload bound: for DS_ALLOCATED records
+ *    0 < requested_size <= size and ds_align_up(requested_size) <= size.
+ *    For DS_FREE and DS_NOT_USED records requested_size == 0.
  */
 typedef struct {
-    size_t head; /**< Offset of the block from the start of dynostatic_buffer_t::memory.
+    size_t head;           /**< Offset of the block from the start of dynostatic_buffer_t::memory.
                       Meaningful only when allocation_status != DS_NOT_USED. */
-    size_t size; /**< Physical capacity of the block (requested size aligned up to
+    size_t size;           /**< Physical capacity of the block (requested size aligned up to
                       DS_ALIGNMENT); preserved on reuse. Meaningful only when
                       allocation_status != DS_NOT_USED. */
+    size_t requested_size; /**< Bytes requested by the current owner. Meaningful ONLY
+                            when allocation_status == DS_ALLOCATED; zero and
+                            meaningless for DS_FREE and DS_NOT_USED records. */
 
     ds_allocator_status_t allocation_status; /**< Lifecycle state of this record; governs
                                                   the meaning of head and size. */
@@ -504,7 +510,7 @@ ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, voi
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND Given memory is not part of any allocation in dynostatic buffer.
  * @retval ERROR_DS_NO_MEMORY Given memory is not enough to set the specified value.
  */
-ds_err_code_t ds_safe_memory_set(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, char value_to_set, size_t cnt_to_set);
+ds_err_code_t ds_safe_memory_set(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, uint8_t value_to_set, size_t cnt_to_set);
 
 #ifdef __cplusplus
 }
