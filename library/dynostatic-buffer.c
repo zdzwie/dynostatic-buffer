@@ -583,7 +583,7 @@ ds_err_code_t ds_get_memory_usage(const dynostatic_buffer_t *p_ds_buffer, uint8_
     }
     /* LCOV_EXCL_STOP */
 
-    *p_memory_usage = (uint8_t)((100u * usage) / DS_BUFFER_MEMORY_SIZE);
+    *p_memory_usage = (uint8_t)(((uint32_t)usage * 100u) / (uint32_t)DS_BUFFER_MEMORY_SIZE);
     return ERROR_DS_OK;
 }
 

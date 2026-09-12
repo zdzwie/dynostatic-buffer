@@ -87,6 +87,7 @@ DS_STATIC_ASSERT((DS_MAX_ALLOCATION_SIZE % DS_ALIGNMENT) == 0u, "DS_MAX_ALLOCATI
 /* Overflow guard for ds_align_up (discussed at #7 — closes the implicit
      * size + (DS_ALIGNMENT - 1) wraparound relationship for free): */
 DS_STATIC_ASSERT(DS_MAX_ALLOCATION_SIZE <= (SIZE_MAX - DS_ALIGNMENT) + 1u, "ds_align_up may overflow for sizes near SIZE_MAX");
+DS_STATIC_ASSERT(DS_BUFFER_MEMORY_SIZE <= (UINT32_MAX / 100u), "DS_BUFFER_MEMORY_SIZE too large for the usage percentage arithmetic");
 /** @endcond */
 
 /*---------------Types----------------*/

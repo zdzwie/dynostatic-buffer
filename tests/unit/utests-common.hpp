@@ -42,7 +42,8 @@ constexpr std::size_t AlignUp(std::size_t v) noexcept
      */
 inline uint8_t ExpectedUsage(size_t total_aligned_bytes)
 {
-    return static_cast<uint8_t>((100u * total_aligned_bytes) / DS_BUFFER_MEMORY_SIZE);
+    return static_cast<uint8_t>((static_cast<std::uint64_t>(total_aligned_bytes) * 100ULL)
+                                / static_cast<std::uint64_t>(DS_BUFFER_MEMORY_SIZE));
 }
 
 /**

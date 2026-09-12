@@ -32,7 +32,13 @@ bool IsAligned(const void *p)
 
 uint8_t ExpectedUsage(size_t total_aligned_bytes)
 {
-    return (uint8_t)((100u * total_aligned_bytes) / DS_BUFFER_MEMORY_SIZE);
+    /* Computed deliberately wider than ds_get_memory_usage() does, so this
+     * stays an INDEPENDENT oracle. The previous form mirrored the
+     * implementation expression character for character, including the
+     * 16-bit-size_t overflow it used to contain — an oracle that reproduces
+     * the defect can never detect it. See test_ds_memory_usage.c. */
+    return (uint8_t)(((unsigned long long)total_aligned_bytes * 100ULL)
+                     / (unsigned long long)DS_BUFFER_MEMORY_SIZE);
 }
 
 void *DsTestMalloc(dynostatic_buffer_t *p_buffer, size_t size)
