@@ -228,3 +228,48 @@ TEST_F(Safe_Memory_Copy_Tests, Does_Not_Touch_Neighbour_Block)
         ASSERT_EQ(p2[i], kPrefill) << "neighbour byte " << i << " clobbered";
     }
 }
+
+/*--------------------- Overlapping regions ---------------------*/
+
+/* memcpy on overlapping regions is UB, so a source that overlaps the
+ * destination (e.g. shifting data inside one block) must be rejected with
+ * no side effects — in both shift directions. */
+TEST_F(Safe_Memory_Copy_Tests, Rejects_Overlapping_Regions)
+{
+    const size_t len = AlignUp(32u);
+    const size_t shift = 4u;
+    const size_t copy_len = 16u;
+    uint8_t *p = nullptr;
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), len), ERROR_DS_OK);
+    for (size_t i = 0; i < len; i++) {
+        p[i] = static_cast<uint8_t>(i);
+    }
+
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p + shift, p, copy_len), ERROR_DS_INVALID_ARG);  /* forward */
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, p + shift, copy_len), ERROR_DS_INVALID_ARG);  /* backward */
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, p, copy_len), ERROR_DS_INVALID_ARG);          /* identical */
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p + shift, p, shift + 1u), ERROR_DS_INVALID_ARG); /* one byte shared */
+
+    for (size_t i = 0; i < len; i++) {
+        ASSERT_EQ(p[i], static_cast<uint8_t>(i)) << "byte " << i << " modified by a rejected call";
+    }
+}
+
+/* Boundary: regions that touch but do not share a byte are legal. */
+TEST_F(Safe_Memory_Copy_Tests, Accepts_Adjacent_Regions_In_Same_Block)
+{
+    const size_t len = AlignUp(32u);
+    const size_t half = len / 2u;
+    uint8_t *p = nullptr;
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), len), ERROR_DS_OK);
+    for (size_t i = 0; i < len; i++) {
+        p[i] = static_cast<uint8_t>(i);
+    }
+
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p + half, p, half), ERROR_DS_OK);
+
+    for (size_t i = 0; i < half; i++) {
+        ASSERT_EQ(p[i], static_cast<uint8_t>(i)) << "source byte " << i;
+        ASSERT_EQ(p[half + i], static_cast<uint8_t>(i)) << "copied byte " << i;
+    }
+}

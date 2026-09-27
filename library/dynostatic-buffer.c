@@ -75,8 +75,9 @@ static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero);
  * suppressions (clang-tidy insecureAPI today, future MISRA deviations)
  * live in exactly one place.
  *
- * @pre Regions must not overlap (memcpy semantics); callers guarantee this
- *      structurally — distinct allocator blocks never alias.
+ * @pre Regions must not overlap (memcpy semantics). ds_realloc guarantees
+ *      this structurally (distinct allocator blocks never alias);
+ *      ds_safe_memory_copy rejects overlapping caller regions before calling.
  *
  * @param[out] p_dest Destination memory.
  * @param[in] dest_size Guaranteed writable size of the destination — the
@@ -685,6 +686,13 @@ ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, voi
     const size_t capacity = p_alloc_holder->allocators[alloc_idx].size;
     if ((src_size > capacity) || (shift > (capacity - src_size))) {
         return ERROR_DS_NO_MEMORY; /* or a dedicated OUT_OF_BOUNDS — see review */
+    }
+
+    const uintptr_t dst_addr = (uintptr_t)p_dst_memory;
+    const uintptr_t src_addr = (uintptr_t)p_src_memory;
+    const uintptr_t distance = (dst_addr >= src_addr) ? (dst_addr - src_addr) : (src_addr - dst_addr);
+    if (distance < (uintptr_t)src_size) {
+        return ERROR_DS_INVALID_ARG;
     }
 
     ds_memcpy(p_dst_memory, capacity - shift, p_src_memory, src_size);

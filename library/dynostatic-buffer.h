@@ -478,6 +478,7 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer);
  *
  * Save copy means, that function checks, that given memory is part of got ds_buffer and allocation assigned to given
  * buffer have destination memory size enough to copy source memory. If not, function returns error code.
+ * Source and destination regions must not overlap; overlapping regions are rejected with ERROR_DS_INVALID_ARG.
  *
  * @param[in] p_alloc_holder Pointer to dynostatic-buffer structure holding the destination memory.
  * @param[in, out] p_dst_memory Pointer to destination memory.
@@ -486,7 +487,7 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer);
  *
  * @retval ERROR_DS_OK Memory was properly copied.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
- * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
+ * @retval ERROR_DS_INVALID_ARG Given parameters are invalid, or source and destination regions overlap.
  * @retval ERROR_DS_MEMORY_OUT_OF_DS Given memory is not part of dynostatic buffer.
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND Given memory is not part of any allocation in dynostatic buffer.
  * @retval ERROR_DS_NO_MEMORY Given memory is not enough to copy source memory.

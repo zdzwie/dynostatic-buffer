@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed memory allocation problem when requested by user memory size is different than alignment size.
+- Fixed undefined behaviour in `ds_safe_memory_copy` when source and destination overlap; such calls now return `ERROR_DS_INVALID_ARG`.
 
 ## [1.0.0] - 2026.08.16
 
