@@ -57,10 +57,6 @@ extern "C" {
     #define DS_MAX_ALLOCATION_SIZE 256u /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
 #endif
 
-#ifndef DS_ALIGNMENT
-    #define DS_ALIGNMENT (4u) /**< Alignment for memory allocations. */
-#endif
-
 #ifdef __cplusplus
     #define DS_STATIC_ASSERT(cond, msg) static_assert(cond, msg)
 #else
@@ -74,6 +70,17 @@ typedef struct {
     long double ds_ld_;
     void *ds_ptr_;
 } ds_max_align_t;
+
+/**
+ * Alignment for memory allocations. Defaults to the strictest fundamental
+ * alignment, so like malloc() every returned pointer is suitably aligned for
+ * any object type (double, uint64_t, pointers, ...). It may be lowered on
+ * purpose to save memory on small targets, but then returned pointers are only
+ * valid for types with alignof <= DS_ALIGNMENT.
+ */
+#ifndef DS_ALIGNMENT
+    #define DS_ALIGNMENT ((size_t)alignof(ds_max_align_t))
+#endif
 
 /** @cond DOXYGEN_SHOULD_SKIP_THIS */
 DS_STATIC_ASSERT((DS_ALIGNMENT & (DS_ALIGNMENT - 1u)) == 0u, "DS_ALIGNMENT must be a power of two");

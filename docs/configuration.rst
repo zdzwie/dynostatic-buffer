@@ -52,13 +52,19 @@ Options
 
 .. c:macro:: DS_ALIGNMENT
 
-   *Default:* ``4``.
+   *Default:* ``alignof(ds_max_align_t)``, the platform's strictest fundamental
+   alignment (16 on typical 64-bit hosts).
 
    Alignment, in bytes, of every returned pointer and the rounding granularity
    for block capacities. Must be a power of two, at least the alignment of a
    32-bit type, and no larger than the platform's strictest fundamental
    alignment. Larger values waste more to internal rounding but satisfy stricter
    types (e.g. SIMD or DMA buffers).
+
+   The default matches ``malloc``: returned pointers are suitable for any
+   fundamental type. Lowering it (e.g. to ``4`` on a small MCU) saves memory, but
+   then pointers are only valid for types whose alignment does not exceed
+   ``DS_ALIGNMENT``.
 
 .. c:macro:: DS_ZERO_ON_FREE
 

@@ -133,7 +133,7 @@ TEST_F(Safe_Memory_Copy_Tests, Rejects_Wrapping_Size)
     ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), len), ERROR_DS_OK);
     std::memset(p, kPrefill, len);
 
-    uint8_t src[1] = { kPattern }; /* never read: the copy must not execute */
+    const uint8_t src[1] = { kPattern }; /* never read: the copy must not execute */
 
     ASSERT_EQ(ds_safe_memory_copy(&buf_, p, src, SIZE_MAX), ERROR_DS_NO_MEMORY);
     ASSERT_EQ(ds_safe_memory_copy(&buf_, p + 3, src, SIZE_MAX - 2u), ERROR_DS_NO_MEMORY);

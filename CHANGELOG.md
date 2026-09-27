@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed memory allocation problem when requested by user memory size is different than alignment size.
 - Fixed undefined behaviour in `ds_safe_memory_copy` when source and destination overlap; such calls now return `ERROR_DS_INVALID_ARG`.
 
+### Changed
+
+- Default `DS_ALIGNMENT` is now `alignof(ds_max_align_t)` (16 on typical 64-bit hosts) instead of 4, so returned pointers are aligned for any fundamental type like `malloc` (previously 8-byte types such as `uint64_t`, `double` and 64-bit pointers could be misaligned). This changes the layout of `dynostatic_buffer_t` and the per-block rounding; custom `DS_MAX_ALLOCATION_SIZE` values must now be a multiple of the new alignment. Define `DS_ALIGNMENT` explicitly to keep the old behaviour.
+
 ## [1.0.0] - 2026.08.16
 
 ### Added

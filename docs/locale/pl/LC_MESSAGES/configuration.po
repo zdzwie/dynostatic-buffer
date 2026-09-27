@@ -119,8 +119,12 @@ msgstr ""
 ":c:macro:`DS_BUFFER_MEMORY_SIZE`."
 
 #: ../../configuration.rst:55
-msgid "*Default:* ``4``."
-msgstr "*Domyślnie:* ``4``."
+msgid ""
+"*Default:* ``alignof(ds_max_align_t)``, the platform's strictest fundamental "
+"alignment (16 on typical 64-bit hosts)."
+msgstr ""
+"*Domyślnie:* ``alignof(ds_max_align_t)``, czyli najściślejsze podstawowe "
+"wyrównanie na platformie (16 na typowych hostach 64-bitowych)."
 
 #: ../../configuration.rst:57
 msgid ""
@@ -136,6 +140,18 @@ msgstr ""
 "wyrównanie na platformie. Większe wartości marnują więcej na wewnętrzne "
 "zaokrąglanie, ale spełniają wymagania ściślejszych typów (np. buforów SIMD "
 "lub DMA)."
+
+#: ../../configuration.rst:64
+msgid ""
+"The default matches ``malloc``: returned pointers are suitable for any "
+"fundamental type. Lowering it (e.g. to ``4`` on a small MCU) saves memory, "
+"but then pointers are only valid for types whose alignment does not exceed "
+"``DS_ALIGNMENT``."
+msgstr ""
+"Wartość domyślna odpowiada ``malloc``: zwracane wskaźniki nadają się dla "
+"dowolnego typu podstawowego. Zmniejszenie jej (np. do ``4`` na małym "
+"mikrokontrolerze) oszczędza pamięć, ale wtedy wskaźniki są poprawne tylko "
+"dla typów, których wyrównanie nie przekracza ``DS_ALIGNMENT``."
 
 #: ../../configuration.rst:65 ../../configuration.rst:75
 msgid "*Default:* ``0``."

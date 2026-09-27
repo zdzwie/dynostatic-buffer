@@ -156,7 +156,7 @@ void test_Safe_Memory_Copy_Rejects_Wrapping_Size(void)
 {
     const size_t len = DS_TEST_ALIGN_UP(16u);
     uint8_t *p = NULL;
-    uint8_t src[1] = { kPattern }; /* never read: the copy must not execute */
+    const uint8_t src[1] = { kPattern }; /* never read: the copy must not execute */
     size_t i;
 
     TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, len));

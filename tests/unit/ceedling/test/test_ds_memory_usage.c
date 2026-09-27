@@ -211,15 +211,17 @@ void test_MemoryUsage_Is_Exact_And_Monotonic_Across_Fill_Levels(void)
 void test_MemoryUsage_Rounds_Down(void)
 {
     const size_t c_capacity = DS_TEST_ALIGN_UP(1u);
+    const size_t c_scaled = c_capacity * 100u;
+    const size_t c_arena = (size_t)DS_BUFFER_MEMORY_SIZE;
     void *p = NULL;
 
-    TEST_ASSERT_LESS_THAN_size_t_MESSAGE((size_t)DS_BUFFER_MEMORY_SIZE, c_capacity * 100u,
-                                         "premise: one minimal block is well under 1 % of the arena");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(0u, c_scaled % c_arena,
+                                  "premise: one minimal block must be a fractional percentage of the arena");
 
     TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, &p, 1u));
 
-    TEST_ASSERT_EQUAL_UINT8_MESSAGE(0u, Usage(),
-                                    "a live sub-1 % block must round down to 0, not up to 1");
+    TEST_ASSERT_EQUAL_UINT8_MESSAGE((uint8_t)(c_scaled / c_arena), Usage(),
+                                    "a fractional percentage must round down, not up or to nearest");
 }
 
 /**

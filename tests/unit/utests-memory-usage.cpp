@@ -167,14 +167,17 @@ TEST_F(MemoryUsage_Tests, Usage_Is_Exact_And_Monotonic_Across_Fill_Levels)
 TEST_F(MemoryUsage_Tests, Usage_Rounds_Down)
 {
     const std::size_t c_capacity = AlignUp(1u);
+    const std::size_t c_scaled = c_capacity * 100u;
+    const std::size_t c_arena = static_cast<std::size_t>(DS_BUFFER_MEMORY_SIZE);
 
-    ASSERT_LT(c_capacity * 100u, static_cast<std::size_t>(DS_BUFFER_MEMORY_SIZE))
-        << "premise: one minimal block is well under 1 % of the arena";
+    ASSERT_NE(c_scaled % c_arena, 0u)
+        << "premise: one minimal block must be a fractional percentage of the arena";
 
     char *p = NULL;
     ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), 1u), ERROR_DS_OK);
 
-    ASSERT_EQ(Usage(), 0u) << "a live sub-1 % block must round down to 0, not up to 1";
+    ASSERT_EQ(Usage(), static_cast<uint8_t>(c_scaled / c_arena))
+        << "a fractional percentage must round down, not up or to nearest";
 }
 
 /**
