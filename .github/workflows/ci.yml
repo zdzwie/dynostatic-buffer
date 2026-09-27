@@ -80,12 +80,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: GCC
+          # The `dev` preset builds with AddressSanitizer + UndefinedBehaviorSanitizer
+          # (-fno-sanitize-recover=all), so any memory error or UB aborts the test run.
+          - name: GCC, ASan+UBSan
             os: ubuntu-latest
             preset: dev
             cc: gcc
             cxx: g++
-          - name: Clang
+          - name: Clang, ASan+UBSan
             os: ubuntu-latest
             preset: dev
             cc: clang

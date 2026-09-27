@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Tracking of requested memory size and alignment size in the memory management functions.
 - Adding Ceedling framework for unit testing to enhance test coverage and reliability.
+- Adding ASan+UBSan checking during tests.
 
 ### Fixed
 
