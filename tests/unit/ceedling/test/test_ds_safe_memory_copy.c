@@ -293,9 +293,9 @@ void test_Safe_Memory_Copy_Rejects_Overlapping_Regions(void)
         p[i] = (uint8_t)i;
     }
 
-    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p + shift, p, copy_len));  /* forward */
-    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p, p + shift, copy_len));  /* backward */
-    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p, p, copy_len));          /* identical */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p + shift, p, copy_len));   /* forward */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p, p + shift, copy_len));   /* backward */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p, p, copy_len));           /* identical */
     TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p + shift, p, shift + 1u)); /* one byte shared */
 
     for (i = 0u; i < len; i++) {

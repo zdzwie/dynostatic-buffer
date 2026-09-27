@@ -245,9 +245,9 @@ TEST_F(Safe_Memory_Copy_Tests, Rejects_Overlapping_Regions)
         p[i] = static_cast<uint8_t>(i);
     }
 
-    ASSERT_EQ(ds_safe_memory_copy(&buf_, p + shift, p, copy_len), ERROR_DS_INVALID_ARG);  /* forward */
-    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, p + shift, copy_len), ERROR_DS_INVALID_ARG);  /* backward */
-    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, p, copy_len), ERROR_DS_INVALID_ARG);          /* identical */
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p + shift, p, copy_len), ERROR_DS_INVALID_ARG);   /* forward */
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, p + shift, copy_len), ERROR_DS_INVALID_ARG);   /* backward */
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, p, copy_len), ERROR_DS_INVALID_ARG);           /* identical */
     ASSERT_EQ(ds_safe_memory_copy(&buf_, p + shift, p, shift + 1u), ERROR_DS_INVALID_ARG); /* one byte shared */
 
     for (size_t i = 0; i < len; i++) {
