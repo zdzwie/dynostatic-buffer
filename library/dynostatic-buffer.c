@@ -75,8 +75,9 @@ static inline void ds_zero(void *p_dest, size_t dest_size, size_t size_to_zero);
  * suppressions (clang-tidy insecureAPI today, future MISRA deviations)
  * live in exactly one place.
  *
- * @pre Regions must not overlap (memcpy semantics); callers guarantee this
- *      structurally — distinct allocator blocks never alias.
+ * @pre Regions must not overlap (memcpy semantics). ds_realloc guarantees
+ *      this structurally (distinct allocator blocks never alias);
+ *      ds_safe_memory_copy rejects overlapping caller regions before calling.
  *
  * @param[out] p_dest Destination memory.
  * @param[in] dest_size Guaranteed writable size of the destination — the
@@ -260,7 +261,7 @@ static inline void ds_memcpy(void *p_dest, size_t dest_size, const void *p_src, 
     (void)dest_size;
 }
 
-static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t size, size_t *p_alloc_idx)
+static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size_t requested_size, size_t *p_alloc_idx)
 {
     /* No need to check params validness (cause of public API implementation it will be dead code). */
     size_t iter;
@@ -269,12 +270,13 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
         return ERROR_DS_NO_ALLOCATORS;
     }
 
-    const size_t aligned_size = ds_align_up(size);
+    const size_t aligned_size = ds_align_up(requested_size);
 
     for (iter = 0u; iter < DS_MAX_ALLOCATION_COUNT; iter++) {
         if (p_ds_buffer->allocators[iter].allocation_status == DS_FREE) {
             if (p_ds_buffer->allocators[iter].size >= aligned_size) {
                 p_ds_buffer->allocators[iter].allocation_status = DS_ALLOCATED;
+                p_ds_buffer->allocators[iter].requested_size = requested_size;
                 p_ds_buffer->used_allocators++;
                 *p_alloc_idx = iter;
                 return ERROR_DS_OK;
@@ -296,6 +298,7 @@ static ds_err_code_t ds_get_new_allocator(dynostatic_buffer_t *p_ds_buffer, size
 
     p_ds_buffer->allocators[iter].allocation_status = DS_ALLOCATED;
     p_ds_buffer->allocators[iter].size = aligned_size;
+    p_ds_buffer->allocators[iter].requested_size = requested_size;
     p_ds_buffer->allocators[iter].head = p_ds_buffer->data_head;
     p_ds_buffer->data_head += aligned_size;
     p_ds_buffer->used_allocators++;
@@ -342,6 +345,10 @@ static ds_err_code_t ds_find_allocator_containing(const dynostatic_buffer_t *p_d
             break;
         }
 
+        if (offset < (p_ds_buffer->allocators[iter].head)) {
+            continue; /* offset is before this block, so it cannot be inside it */
+        }
+
         const size_t offset_in_block = offset - p_ds_buffer->allocators[iter].head;
 
         if (offset_in_block < p_ds_buffer->allocators[iter].size) {
@@ -367,6 +374,7 @@ static void ds_reclaim_trailing(dynostatic_buffer_t *p_ds_buffer, size_t alloc_i
         p_ds_buffer->allocators[idx].allocation_status = DS_NOT_USED;
         p_ds_buffer->allocators[idx].head = 0u;
         p_ds_buffer->allocators[idx].size = 0u;
+        p_ds_buffer->allocators[idx].requested_size = 0u;
 
         if ((0u == idx) || (DS_FREE != p_ds_buffer->allocators[idx - 1u].allocation_status)) {
             cascade = false;
@@ -454,6 +462,7 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
         ds_reclaim_trailing(p_ds_buffer, alloc_idx);
     } else {
         p_ds_buffer->allocators[alloc_idx].allocation_status = DS_FREE;
+        p_ds_buffer->allocators[alloc_idx].requested_size = 0u;
     }
 
     p_ds_buffer->used_allocators--;
@@ -485,7 +494,7 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
     return ERROR_DS_OK;
 }
 
-ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size)
+ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t requested_size)
 {
     if ((NULL == p_ds_buffer) || (NULL == p_memory)) {
         return ERROR_DS_INVALID_ARG;
@@ -495,15 +504,15 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
         return ERROR_DS_NO_INIT;
     }
 
-    if (size == 0u) {
+    if (requested_size == 0u) {
         return ds_free(p_ds_buffer, p_memory);
     }
 
     if (*p_memory == NULL) {
-        return ds_malloc(p_ds_buffer, p_memory, size);
+        return ds_malloc(p_ds_buffer, p_memory, requested_size);
     }
 
-    if (size > DS_MAX_ALLOCATION_SIZE) {
+    if (requested_size > DS_MAX_ALLOCATION_SIZE) {
         return ERROR_DS_TOO_BIG_CHUNK;
     }
 
@@ -514,29 +523,33 @@ ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size
     }
 
     const size_t head = p_ds_buffer->allocators[alloc_idx].head;
-    const size_t capacity = p_ds_buffer->allocators[alloc_idx].size;
-    const size_t aligned_size = ds_align_up(size);
+    const size_t old_capacity = p_ds_buffer->allocators[alloc_idx].size;
+    const size_t old_payload = p_ds_buffer->allocators[alloc_idx].requested_size; /* FIX #2 */
+    const size_t aligned_size = ds_align_up(requested_size);
 
-    if (aligned_size <= capacity) {
-        return ERROR_DS_OK; /* shrink or fit: in place, capacity retained (no split) */
+    if (aligned_size <= old_capacity) {
+        p_ds_buffer->allocators[alloc_idx].requested_size = requested_size;
+        return ERROR_DS_OK;
     }
 
     /* Trailing-block fast path: grow in place by advancing the bump head. */
-    if (((head + capacity) == p_ds_buffer->data_head)
+    if (((head + old_capacity) == p_ds_buffer->data_head)
         && ((DS_BUFFER_MEMORY_SIZE - head) >= aligned_size)) {
         p_ds_buffer->data_head = head + aligned_size;
         p_ds_buffer->allocators[alloc_idx].size = aligned_size;
+        p_ds_buffer->allocators[alloc_idx].requested_size = requested_size; /* FIX #2 */
         return ERROR_DS_OK;
     }
 
     /* Move path: allocate FIRST, so any failure leaves the original intact. */
     void *p_new = NULL;
-    ret = ds_malloc(p_ds_buffer, &p_new, size);
+    ret = ds_malloc(p_ds_buffer, &p_new, requested_size);
     if (ret != ERROR_DS_OK) {
         return ret;
     }
 
-    ds_memcpy(p_new, aligned_size, *p_memory, capacity);
+    DS_ASSERT(old_payload <= requested_size);
+    ds_memcpy(p_new, aligned_size, *p_memory, old_payload);
 
     ret = ds_free(p_ds_buffer, p_memory); /* zeroes old block under DS_ZERO_ON_FREE; may cascade */
     DS_ASSERT(ret == ERROR_DS_OK);
@@ -571,7 +584,7 @@ ds_err_code_t ds_get_memory_usage(const dynostatic_buffer_t *p_ds_buffer, uint8_
     }
     /* LCOV_EXCL_STOP */
 
-    *p_memory_usage = (uint8_t)((100u * usage) / DS_BUFFER_MEMORY_SIZE);
+    *p_memory_usage = (uint8_t)(((uint32_t)usage * 100u) / (uint32_t)DS_BUFFER_MEMORY_SIZE);
     return ERROR_DS_OK;
 }
 
@@ -675,11 +688,18 @@ ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, voi
         return ERROR_DS_NO_MEMORY; /* or a dedicated OUT_OF_BOUNDS — see review */
     }
 
+    const uintptr_t dst_addr = (uintptr_t)p_dst_memory;
+    const uintptr_t src_addr = (uintptr_t)p_src_memory;
+    const uintptr_t distance = (dst_addr >= src_addr) ? (dst_addr - src_addr) : (src_addr - dst_addr);
+    if (distance < (uintptr_t)src_size) {
+        return ERROR_DS_INVALID_ARG;
+    }
+
     ds_memcpy(p_dst_memory, capacity - shift, p_src_memory, src_size);
     return ERROR_DS_OK;
 }
 
-ds_err_code_t ds_safe_memory_set(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, char value_to_set, size_t cnt_to_set)
+ds_err_code_t ds_safe_memory_set(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, uint8_t value_to_set, size_t cnt_to_set)
 {
     if ((NULL == p_alloc_holder) || (NULL == p_dst_memory) || (0u == cnt_to_set)) {
         return ERROR_DS_INVALID_ARG;

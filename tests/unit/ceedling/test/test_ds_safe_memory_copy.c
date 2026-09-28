@@ -156,7 +156,7 @@ void test_Safe_Memory_Copy_Rejects_Wrapping_Size(void)
 {
     const size_t len = DS_TEST_ALIGN_UP(16u);
     uint8_t *p = NULL;
-    uint8_t src[1] = { kPattern }; /* never read: the copy must not execute */
+    const uint8_t src[1] = { kPattern }; /* never read: the copy must not execute */
     size_t i;
 
     TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, len));
@@ -272,5 +272,55 @@ void test_Safe_Memory_Copy_Does_Not_Touch_Neighbour_Block(void)
     for (i = 0u; i < len; i++) {
         TEST_ASSERT_EQUAL_HEX8_MESSAGE(kPrefill, p2[i],
                                        DS_TEST_MSG("neighbour byte %zu clobbered", i));
+    }
+}
+
+/*--------------------- Overlapping regions ---------------------*/
+
+/* memcpy on overlapping regions is UB, so a source that overlaps the
+ * destination (e.g. shifting data inside one block) must be rejected with
+ * no side effects — in both shift directions. */
+void test_Safe_Memory_Copy_Rejects_Overlapping_Regions(void)
+{
+    const size_t len = DS_TEST_ALIGN_UP(32u);
+    const size_t shift = 4u;
+    const size_t copy_len = 16u;
+    uint8_t *p = NULL;
+    size_t i;
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, len));
+    for (i = 0u; i < len; i++) {
+        p[i] = (uint8_t)i;
+    }
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p + shift, p, copy_len));   /* forward */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p, p + shift, copy_len));   /* backward */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p, p, copy_len));           /* identical */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p + shift, p, shift + 1u)); /* one byte shared */
+
+    for (i = 0u; i < len; i++) {
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE((uint8_t)i, p[i],
+                                       DS_TEST_MSG("byte %zu modified by a rejected call", i));
+    }
+}
+
+/* Boundary: regions that touch but do not share a byte are legal. */
+void test_Safe_Memory_Copy_Accepts_Adjacent_Regions_In_Same_Block(void)
+{
+    const size_t len = DS_TEST_ALIGN_UP(32u);
+    const size_t half = len / 2u;
+    uint8_t *p = NULL;
+    size_t i;
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, len));
+    for (i = 0u; i < len; i++) {
+        p[i] = (uint8_t)i;
+    }
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_safe_memory_copy(&buf_, p + half, p, half));
+
+    for (i = 0u; i < half; i++) {
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE((uint8_t)i, p[i], DS_TEST_MSG("source byte %zu", i));
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE((uint8_t)i, p[half + i], DS_TEST_MSG("copied byte %zu", i));
     }
 }

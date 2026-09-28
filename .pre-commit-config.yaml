@@ -41,9 +41,14 @@ repos:
       - id: cppcheck
         name: cppcheck static analysis
         language: system
+        # unusedStructMember is suppressed for headers only: pre-commit hands each
+        # header to cppcheck as its own file, where the struct members have no
+        # visible users (they are used in the .c files), so every member of a
+        # public struct would be reported. It stays active for .c/.cpp files.
         entry: cppcheck --quiet --error-exitcode=1
           --enable=warning,style,performance,portability
-          --inline-suppr -I library, -UDS_ALIGNMENT
+          --inline-suppr -I library -UDS_ALIGNMENT
+          --suppress=unusedStructMember:*.h --suppress=unusedStructMember:*.hpp
         files: '\.(c|h|cpp|hpp)$'
         pass_filenames: true
 

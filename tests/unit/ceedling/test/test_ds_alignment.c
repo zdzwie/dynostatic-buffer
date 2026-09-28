@@ -17,6 +17,18 @@
 #include "dynostatic-buffer.h"
 #include "utests-common.h"
 
+#define DS_TEST_ALLOC_STORE_AFTER_PADDING(type, value)                                            \
+    do {                                                                                          \
+        void *pad = NULL;                                                                         \
+        type *p = NULL;                                                                           \
+        TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, &pad, 1u));                          \
+        TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, sizeof(type)));         \
+        TEST_ASSERT_EQUAL_size_t_MESSAGE(0u, ((uintptr_t)p) % alignof(type),                      \
+                                         "block not aligned for " #type);                         \
+        *p = (value);                                                                             \
+        TEST_ASSERT_TRUE_MESSAGE(*p == (value), "value stored in " #type " block not read back"); \
+    } while (0)
+
 /** Sizes from INSTANTIATE_TEST_SUITE_P(Various_Sizes, ...). */
 static const size_t various_sizes[] = { 1u,
                                         2u,
@@ -150,4 +162,12 @@ void test_Alignment_Reused_Block_Is_Aligned(void)
     TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p2, 1));
     TEST_ASSERT_TRUE(IsAligned(p2));
     TEST_ASSERT_EQUAL_PTR(original, p2);
+}
+
+void test_Alignment_Blocks_Are_Aligned_For_Fundamental_Types(void)
+{
+    DS_TEST_ALLOC_STORE_AFTER_PADDING(uint64_t, UINT64_C(0x0123456789ABCDEF));
+    DS_TEST_ALLOC_STORE_AFTER_PADDING(double, 3.25);
+    DS_TEST_ALLOC_STORE_AFTER_PADDING(void *, (void *)&buf_);
+    DS_TEST_ALLOC_STORE_AFTER_PADDING(long double, 1.5L);
 }

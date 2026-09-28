@@ -19,6 +19,20 @@ class Alignment_Tests : public DsBufferTest {};
 class Alignment_Param_Tests : public Alignment_Tests,
                               public ::testing::WithParamInterface<size_t> {};
 
+template <typename T>
+static void AllocStoreAfterPadding(dynostatic_buffer_t *p_buf, T value)
+{
+    void *pad = nullptr;
+    T *p = nullptr;
+    ASSERT_EQ(ds_malloc(p_buf, &pad, 1u), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(p_buf, reinterpret_cast<void **>(&p), sizeof(T)), ERROR_DS_OK);
+
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(p) % alignof(T), 0u)
+        << "block not aligned for a type with alignof " << alignof(T);
+    *p = value;
+    ASSERT_EQ(*p, value);
+}
+
 TEST_P(Alignment_Param_Tests, Malloc_Returns_Aligned_Pointer)
 {
     void *p = nullptr;
@@ -116,4 +130,12 @@ TEST_F(Alignment_Tests, Reused_Block_Is_Aligned)
     ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p2), 1), ERROR_DS_OK);
     ASSERT_TRUE(IsAligned(p2));
     ASSERT_EQ(p2, original);
+}
+
+TEST_F(Alignment_Tests, Blocks_Are_Aligned_For_Fundamental_Types)
+{
+    AllocStoreAfterPadding<uint64_t>(&buf_, UINT64_C(0x0123456789ABCDEF));
+    AllocStoreAfterPadding<double>(&buf_, 3.25);
+    AllocStoreAfterPadding<void *>(&buf_, static_cast<void *>(&buf_));
+    AllocStoreAfterPadding<long double>(&buf_, 1.5L);
 }

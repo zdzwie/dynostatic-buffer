@@ -31,8 +31,8 @@ LCOV_MAJOR="$(lcov --version 2>/dev/null | grep -oE '[0-9]+' | head -1)"
 EXCL_BR_RC='lcov_excl_br_line=LCOV_EXCL_BR_LINE|DS_ASSERT'
 
 if [ "${LCOV_MAJOR:-1}" -ge 2 ]; then
-    LCOV_IGNORE=(--ignore-errors mismatch,gcov,source,empty,negative,unused)
-    GENHTML_IGNORE=(--ignore-errors mismatch,source,empty,negative,unused)
+    LCOV_IGNORE=(--ignore-errors mismatch,gcov,source,empty,negative,unused,inconsistent)
+    GENHTML_IGNORE=(--ignore-errors mismatch,source,empty,negative,unused,inconsistent)
     LCOV_RC=(--rc branch_coverage=1 --rc "$EXCL_BR_RC")
     GENHTML_RC=(--rc branch_coverage=1)
 else

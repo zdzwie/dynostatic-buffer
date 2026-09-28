@@ -254,7 +254,7 @@ void test_Getter_Zero_When_Slots_Exhausted_With_Memory_Left(void)
 
 void test_Getter_Full_Prefix_Reports_Largest_Parked_Capacity(void)
 {
-    const size_t big = DS_TEST_ALIGN_UP(8u);
+    const size_t big = DS_TEST_ALIGN_UP((size_t)DS_ALIGNMENT + 1u); /* two alignment units */
     const size_t small = DS_TEST_ALIGN_UP(1u);
     char *blocks[DS_MAX_ALLOCATION_COUNT] = { NULL };
     size_t iter;

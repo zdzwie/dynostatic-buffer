@@ -21,7 +21,7 @@ cmake --build --preset release
 
 ### Bazel
 
-The Bazel build is pinned to Bazel 8 via `.bazelversion` (bazelisk picks it up
+The Bazel build is pinned to Bazel 9 via `.bazelversion` (bazelisk picks it up
 automatically) and pulls GoogleTest from the Bazel Central Registry:
 
 ```sh
