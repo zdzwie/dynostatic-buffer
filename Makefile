@@ -15,7 +15,7 @@
 #
 # Override the compiler or options from the command line, e.g.:
 #   make CC=clang
-#   make DS_ZERO_ON_FREE=1
+#   make DS_ZERO_ON_FREE=0
 
 # ---- Layout ----------------------------------------------------------------
 
@@ -51,8 +51,7 @@ example: examples
 # Shared library: compiled -fPIC from the same source/flags the fragment uses.
 $(SHARED_LIB): $(DYNOSTATIC_BUFFER_SRC) $(DYNOSTATIC_BUFFER_HDR)
 	@mkdir -p $(@D)
-	$(CC) $(DYNOSTATIC_BUFFER_CPPFLAGS) -DDS_ZERO_ON_FREE=$(DS_ZERO_ON_FREE) \
-		$(DYNOSTATIC_BUFFER_CFLAGS) -fPIC -shared $< -o $@
+	$(CC) $(DYNOSTATIC_BUFFER_CPPFLAGS) $(DYNOSTATIC_BUFFER_CFLAGS) -fPIC -shared $< -o $@
 
 # Each example links the archive directly so the linker cannot substitute the
 # shared library, which would leave the binary needing libdynostatic_buffer.so

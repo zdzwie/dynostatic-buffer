@@ -17,9 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed memory allocation problem when requested by user memory size is different than alignment size.
 - Fixed undefined behaviour in `ds_safe_memory_copy` when source and destination overlap; such calls now return `ERROR_DS_INVALID_ARG`.
+- `ds_safe_memory_copy` and `ds_safe_memory_set` now bound writes by the size the caller requested instead of the block's capacity. Writes into alignment padding or into the spare capacity of a reused or shrunk block now return `ERROR_DS_NO_MEMORY`.
 
 ### Changed
 
+- `DS_ZERO_ON_FREE` is now enabled by default in the header and in every build system (CMake, Bazel, Make), matching the documented contract; set it to `0` to keep the old behaviour (CMake `-DDS_ZERO_ON_FREE=OFF`, Make `DS_ZERO_ON_FREE=0`, Bazel `--//library:zero_on_free=false`). The define is now public, so consumers and the unit tests see the policy the library was built with, and any non-zero value enables it (previously only `1`). The unit tests run in both modes.
 - Default `DS_ALIGNMENT` is now `alignof(ds_max_align_t)` (16 on typical 64-bit hosts) instead of 4, so returned pointers are aligned for any fundamental type like `malloc` (previously 8-byte types such as `uint64_t`, `double` and 64-bit pointers could be misaligned). This changes the layout of `dynostatic_buffer_t` and the per-block rounding; custom `DS_MAX_ALLOCATION_SIZE` values must now be a multiple of the new alignment. Define `DS_ALIGNMENT` explicitly to keep the old behaviour.
 
 ## [1.0.0] - 2026.08.16

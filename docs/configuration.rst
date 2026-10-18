@@ -68,13 +68,14 @@ Options
 
 .. c:macro:: DS_ZERO_ON_FREE
 
-   *Default:* ``0``.
+   *Default:* ``1``.
 
-   When set to ``1``, the full capacity of a block is zeroed on :c:func:`ds_free`
+   When enabled (any non-zero value), the full capacity of a block is zeroed on :c:func:`ds_free`
    (and when a block is released during a relocating :c:func:`ds_realloc`).
    Useful for scrubbing sensitive data or getting deterministic contents, at the
    cost of the zeroing work. Note this does **not** affect :c:func:`ds_calloc`,
-   whose zero-fill is unconditional.
+   whose zero-fill is unconditional. Set it to ``0`` to skip the zeroing; then
+   :c:func:`ds_malloc` may return the previous owner's data.
 
 .. c:macro:: DS_LOG_ENABLE
 

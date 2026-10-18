@@ -21,6 +21,15 @@
       }
     },
     {
+      "name": "dev-no-zero-on-free",
+      "displayName": "Debug build with tests, ASan+UBSan, DS_ZERO_ON_FREE disabled",
+      "inherits": "dev",
+      "binaryDir": "${sourceDir}/build/dev-no-zero-on-free",
+      "cacheVariables": {
+        "DS_ZERO_ON_FREE": "OFF"
+      }
+    },
+    {
       "name": "dev-m32",
       "displayName": "Debug build with tests, 32-bit (GCC/Clang -m32)",
       "binaryDir": "${sourceDir}/build/dev-m32",
@@ -103,6 +112,7 @@
   ],
   "buildPresets": [
     { "name": "dev", "configurePreset": "dev" },
+    { "name": "dev-no-zero-on-free", "configurePreset": "dev-no-zero-on-free" },
     { "name": "dev-m32", "configurePreset": "dev-m32" },
     { "name": "dev-msvc", "configurePreset": "dev-msvc", "configuration": "Debug" },
     { "name": "release", "configurePreset": "release" },
@@ -119,6 +129,11 @@
         "ASAN_OPTIONS": "abort_on_error=1:detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1",
         "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1"
       }
+    },
+    {
+      "name": "dev-no-zero-on-free",
+      "inherits": "dev",
+      "configurePreset": "dev-no-zero-on-free"
     },
     {
       "name": "dev-m32",

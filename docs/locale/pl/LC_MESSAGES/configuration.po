@@ -153,24 +153,32 @@ msgstr ""
 "mikrokontrolerze) oszczędza pamięć, ale wtedy wskaźniki są poprawne tylko "
 "dla typów, których wyrównanie nie przekracza ``DS_ALIGNMENT``."
 
-#: ../../configuration.rst:65 ../../configuration.rst:75
+#: ../../configuration.rst:65
+msgid "*Default:* ``1``."
+msgstr "*Domyślnie:* ``1``."
+
+#: ../../configuration.rst:77
 msgid "*Default:* ``0``."
 msgstr "*Domyślnie:* ``0``."
 
 #: ../../configuration.rst:67
 msgid ""
-"When set to ``1``, the full capacity of a block is zeroed on "
-":c:func:`ds_free` (and when a block is released during a relocating "
+"When enabled (any non-zero value), the full capacity of a block is zeroed "
+"on :c:func:`ds_free` (and when a block is released during a relocating "
 ":c:func:`ds_realloc`). Useful for scrubbing sensitive data or getting "
 "deterministic contents, at the cost of the zeroing work. Note this does "
-"**not** affect :c:func:`ds_calloc`, whose zero-fill is unconditional."
+"**not** affect :c:func:`ds_calloc`, whose zero-fill is unconditional. Set "
+"it to ``0`` to skip the zeroing; then :c:func:`ds_malloc` may return the "
+"previous owner's data."
 msgstr ""
-"Gdy ustawione na ``1``, pełna pojemność bloku jest zerowana przy "
-":c:func:`ds_free` (oraz gdy blok jest zwalniany podczas przenoszącego "
-":c:func:`ds_realloc`). Przydatne do czyszczenia danych wrażliwych lub "
-"uzyskania deterministycznej zawartości, kosztem pracy związanej z "
-"zerowaniem. Uwaga: **nie** wpływa to na :c:func:`ds_calloc`, którego "
-"wypełnianie zerami jest bezwarunkowe."
+"Gdy włączone (dowolna wartość niezerowa), pełna pojemność bloku jest "
+"zerowana przy :c:func:`ds_free` (oraz gdy blok jest zwalniany podczas "
+"przenoszącego :c:func:`ds_realloc`). Przydatne do czyszczenia danych "
+"wrażliwych lub uzyskania deterministycznej zawartości, kosztem pracy "
+"związanej z zerowaniem. Uwaga: **nie** wpływa to na :c:func:`ds_calloc`, "
+"którego wypełnianie zerami jest bezwarunkowe. Ustaw ``0``, aby pominąć "
+"zerowanie; wtedy :c:func:`ds_malloc` może zwrócić dane poprzedniego "
+"właściciela."
 
 #: ../../configuration.rst:77
 msgid ""

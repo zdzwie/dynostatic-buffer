@@ -1,4 +1,18 @@
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# Zero the contents of freed blocks (DS_ZERO_ON_FREE). On by default; disable
+# with --//library:zero_on_free=false (or @dynostatic_buffer//library:... from
+# a depending module).
+bool_flag(
+    name = "zero_on_free",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "zero_on_free_disabled",
+    flag_values = {":zero_on_free": "false"},
+)
 
 cc_library(
     name = "dynostatic_buffer",
@@ -6,14 +20,18 @@ cc_library(
     hdrs = ["dynostatic-buffer.h"],
     # These defines change the layout of dynostatic_buffer_t, so they must be
     # visible to every consumer of the header (example, unit tests), matching
-    # the PUBLIC compile definitions in the CMake build.
+    # the PUBLIC compile definitions in the CMake build. DS_ZERO_ON_FREE does
+    # not change the layout, but it is public too, so the unit tests see the
+    # policy the library was built with and can assert on it.
     defines = [
         "DS_BUFFER_MEMORY_SIZE=1024",
         "DS_LOG_ENABLE=1u",
         "DS_MAX_ALLOCATION_COUNT=10",
         "DS_MAX_ALLOCATION_SIZE=512",
-    ],
+    ] + select({
+        ":zero_on_free_disabled": ["DS_ZERO_ON_FREE=0"],
+        "//conditions:default": ["DS_ZERO_ON_FREE=1"],
+    }),
     includes = ["."],
-    local_defines = ["DS_ZERO_ON_FREE=0"],
     visibility = ["//visibility:public"],
 )

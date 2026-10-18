@@ -345,10 +345,6 @@ static ds_err_code_t ds_find_allocator_containing(const dynostatic_buffer_t *p_d
             break;
         }
 
-        if (offset < (p_ds_buffer->allocators[iter].head)) {
-            continue; /* offset is before this block, so it cannot be inside it */
-        }
-
         const size_t offset_in_block = offset - p_ds_buffer->allocators[iter].head;
 
         if (offset_in_block < p_ds_buffer->allocators[iter].size) {
@@ -454,7 +450,7 @@ ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory)
     const size_t head = p_ds_buffer->allocators[alloc_idx].head;
     const size_t size = p_ds_buffer->allocators[alloc_idx].size;
 
-#if DS_ZERO_ON_FREE == 1u
+#if DS_ZERO_ON_FREE
     ds_zero(&p_ds_buffer->memory[head], DS_BUFFER_MEMORY_SIZE - head, size);
 #endif
 
@@ -683,9 +679,13 @@ ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, voi
         return ret;
     }
 
-    const size_t capacity = p_alloc_holder->allocators[alloc_idx].size;
-    if ((src_size > capacity) || (shift > (capacity - src_size))) {
-        return ERROR_DS_NO_MEMORY; /* or a dedicated OUT_OF_BOUNDS — see review */
+    /* Bound by the owner's requested size, not the block capacity: a reused
+     * or shrunk block keeps a larger capacity, which is not the caller's
+     * object. A p_dst_memory in the alignment slack (shift >= requested)
+     * fails here too, since then shift > requested - src_size. */
+    const size_t requested = p_alloc_holder->allocators[alloc_idx].requested_size;
+    if ((src_size > requested) || (shift > (requested - src_size))) {
+        return ERROR_DS_NO_MEMORY;
     }
 
     const uintptr_t dst_addr = (uintptr_t)p_dst_memory;
@@ -695,7 +695,7 @@ ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, voi
         return ERROR_DS_INVALID_ARG;
     }
 
-    ds_memcpy(p_dst_memory, capacity - shift, p_src_memory, src_size);
+    ds_memcpy(p_dst_memory, requested - shift, p_src_memory, src_size);
     return ERROR_DS_OK;
 }
 
@@ -716,11 +716,11 @@ ds_err_code_t ds_safe_memory_set(const dynostatic_buffer_t *p_alloc_holder, void
         return ret;
     }
 
-    const size_t capacity = p_alloc_holder->allocators[alloc_idx].size;
-    if ((cnt_to_set > capacity) || (shift > (capacity - cnt_to_set))) {
-        return ERROR_DS_NO_MEMORY; /* or a dedicated OUT_OF_BOUNDS — see review */
+    const size_t requested = p_alloc_holder->allocators[alloc_idx].requested_size;
+    if ((cnt_to_set > requested) || (shift > (requested - cnt_to_set))) {
+        return ERROR_DS_NO_MEMORY;
     }
 
-    ds_memset(p_dst_memory, capacity - shift, value_to_set, cnt_to_set);
+    ds_memset(p_dst_memory, requested - shift, value_to_set, cnt_to_set);
     return ERROR_DS_OK;
 }

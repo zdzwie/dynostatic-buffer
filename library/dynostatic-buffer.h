@@ -46,7 +46,7 @@ extern "C" {
 #endif
 
 #ifndef DS_ZERO_ON_FREE        /**< If You not use CMake and KConfig. */
-    #define DS_ZERO_ON_FREE 0u /**< Zero the contents of freed blocks in dynostatic-buffer. */
+    #define DS_ZERO_ON_FREE 1u /**< Zero the contents of freed blocks in dynostatic-buffer (1 enabled). */
 #endif
 
 #ifndef DS_MAX_ALLOCATION_COUNT         /**< If You not use CMake and KConfig. */
@@ -486,6 +486,9 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer);
  * Save copy means, that function checks, that given memory is part of got ds_buffer and allocation assigned to given
  * buffer have destination memory size enough to copy source memory. If not, function returns error code.
  * Source and destination regions must not overlap; overlapping regions are rejected with ERROR_DS_INVALID_ARG.
+ * The bound is the size the current owner requested (ds_malloc, ds_calloc or the latest ds_realloc), not the
+ * block's physical capacity: bytes past that size (alignment padding, or the spare capacity of a reused or shrunk
+ * block) are rejected even though they lie inside the block.
  *
  * @param[in] p_alloc_holder Pointer to dynostatic-buffer structure holding the destination memory.
  * @param[in, out] p_dst_memory Pointer to destination memory.
@@ -497,7 +500,7 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer);
  * @retval ERROR_DS_INVALID_ARG Given parameters are invalid, or source and destination regions overlap.
  * @retval ERROR_DS_MEMORY_OUT_OF_DS Given memory is not part of dynostatic buffer.
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND Given memory is not part of any allocation in dynostatic buffer.
- * @retval ERROR_DS_NO_MEMORY Given memory is not enough to copy source memory.
+ * @retval ERROR_DS_NO_MEMORY The copy would run past the requested size of the destination allocation.
  */
 ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, const void *p_src_memory, size_t src_size);
 
@@ -506,6 +509,9 @@ ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, voi
  *
  * Save copy means, that function checks, that given memory is part of got ds_buffer and allocation assigned to given
  * buffer have destination memory size enough to set memory. If not, function returns error code.
+ * The bound is the size the current owner requested (ds_malloc, ds_calloc or the latest ds_realloc), not the
+ * block's physical capacity: bytes past that size (alignment padding, or the spare capacity of a reused or shrunk
+ * block) are rejected even though they lie inside the block.
  *
  * @param[in] p_alloc_holder Pointer to dynostatic-buffer structure holding the destination memory.
  * @param[in, out] p_dst_memory Pointer to destination memory.
@@ -517,7 +523,7 @@ ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, voi
  * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
  * @retval ERROR_DS_MEMORY_OUT_OF_DS Given memory is not part of dynostatic buffer.
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND Given memory is not part of any allocation in dynostatic buffer.
- * @retval ERROR_DS_NO_MEMORY Given memory is not enough to set the specified value.
+ * @retval ERROR_DS_NO_MEMORY The set would run past the requested size of the destination allocation.
  */
 ds_err_code_t ds_safe_memory_set(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, uint8_t value_to_set, size_t cnt_to_set);
 

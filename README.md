@@ -27,6 +27,7 @@ automatically) and pulls GoogleTest from the Bazel Central Registry:
 ```sh
 bazel build //...          # library + examples
 bazel test //...           # also run the unit tests
+bazel test //... --//library:zero_on_free=false   # with DS_ZERO_ON_FREE=0
 bazel run //examples:basic_example
 ```
 
@@ -37,7 +38,7 @@ The top-level `Makefile` builds the library and examples directly:
 ```sh
 make            # static + shared library into build/make/
 make examples   # build every example program into build/make/
-make DS_ZERO_ON_FREE=1   # override options on the command line
+make DS_ZERO_ON_FREE=0   # override options on the command line
 ```
 
 #### Embedding into another project
@@ -68,7 +69,7 @@ clashing with the host project. Useful knobs (all overridable):
 | `DYNOSTATIC_BUFFER_CPPFLAGS` | include path + layout defines for consumer compiles |
 | `DYNOSTATIC_BUFFER_A` | path to the built static library |
 | `DYNOSTATIC_BUFFER_BUILD_DIR` | where artefacts are written (default `build/dynostatic-buffer`) |
-| `DS_ZERO_ON_FREE` | set to `1` to zero freed blocks (library-private) |
+| `DS_ZERO_ON_FREE` | zero freed blocks (default `1`); set to `0` to disable |
 | `DS_BUFFER_MEMORY_SIZE`, `DS_MAX_ALLOCATION_COUNT`, ... | buffer layout configuration |
 
 ## Examples

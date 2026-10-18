@@ -209,3 +209,72 @@ void test_Safe_Memory_Set_Rejects_Pointer_In_Parked_Block(void)
     TEST_ASSERT_EQUAL_UINT(ERROR_DS_ALLOCATOR_NOT_FOUND,
                            ds_safe_memory_set(&buf_, alias + 2, (char)kValue, 4u));
 }
+
+/*--------------------- Requested-size bound (M-1) ---------------------*/
+/* The bound is the size the caller asked for, not the block capacity. */
+
+void test_Safe_Memory_Set_Rejects_Alignment_Slack(void)
+{
+    const size_t req = 3u; /* capacity DS_TEST_ALIGN_UP(3) > 3 */
+    uint8_t *p = NULL;
+    size_t i;
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, req));
+    TEST_ASSERT_GREATER_THAN_size_t(req, DS_TEST_ALIGN_UP(req));
+    (void)memset(p, kPrefill, DS_TEST_ALIGN_UP(req));
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_safe_memory_set(&buf_, p, (char)kValue, req));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_NO_MEMORY, ds_safe_memory_set(&buf_, p, (char)kValue, req + 1u));
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(ERROR_DS_NO_MEMORY, ds_safe_memory_set(&buf_, p + req, (char)kValue, 1u),
+                                   "fill starting in the slack");
+    for (i = req; i < DS_TEST_ALIGN_UP(req); i++) {
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE(kPrefill, p[i], DS_TEST_MSG("slack byte %zu modified", i));
+    }
+}
+
+void test_Safe_Memory_Set_Rejects_Spare_Capacity_Of_Reused_Block(void)
+{
+    const size_t big = DS_TEST_ALIGN_UP(64u);
+    const size_t small = 4u;
+    uint8_t *p_big = NULL;
+    uint8_t *guard = NULL;
+    uint8_t *p_small = NULL;
+    uint8_t *alias;
+    size_t i;
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p_big, big));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&guard, 1u)); /* pins the head */
+    alias = p_big;
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_free(&buf_, (void **)&p_big)); /* parked DS_FREE */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p_small, small));
+    TEST_ASSERT_EQUAL_PTR_MESSAGE(alias, p_small, "precondition: the parked block is reused");
+    (void)memset(p_small, kPrefill, big);
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_safe_memory_set(&buf_, p_small, (char)kValue, small));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_NO_MEMORY, ds_safe_memory_set(&buf_, p_small, (char)kValue, big));
+    for (i = small; i < big; i++) {
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE(kPrefill, p_small[i],
+                                       DS_TEST_MSG("byte %zu modified by a rejected call", i));
+    }
+}
+
+void test_Safe_Memory_Set_Rejects_Spare_Capacity_After_Shrink(void)
+{
+    const size_t len = DS_TEST_ALIGN_UP(16u);
+    uint8_t *p = NULL;
+    uint8_t *before;
+    size_t i;
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, len));
+    before = p;
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_realloc(&buf_, (void **)&p, 1u));
+    TEST_ASSERT_EQUAL_PTR_MESSAGE(before, p, "precondition: shrink happens in place");
+    (void)memset(p, kPrefill, len);
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_safe_memory_set(&buf_, p, (char)kValue, 1u));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_NO_MEMORY, ds_safe_memory_set(&buf_, p, (char)kValue, 4u));
+    for (i = 1u; i < len; i++) {
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE(kPrefill, p[i],
+                                       DS_TEST_MSG("byte %zu modified by a rejected call", i));
+    }
+}

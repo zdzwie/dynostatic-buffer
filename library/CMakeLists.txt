@@ -1,3 +1,7 @@
+# Declared here rather than in the top-level project, so a consumer that pulls
+# in only this directory (add_subdirectory(library)) gets the same default.
+option(DS_ZERO_ON_FREE "Zero the contents of freed blocks in dynostatic-buffer" ON)
+
 add_library(dynostatic_buffer dynostatic-buffer.c)
 include(../scripts/cmake/generate_doc.cmake)
 
@@ -22,10 +26,10 @@ target_compile_definitions(dynostatic_buffer PUBLIC
                            DS_MAX_ALLOCATION_SIZE=512
                            )
 
-# DS_ZERO_ON_FREE only changes ds_free()'s runtime behaviour (see the
-# #if DS_ZERO_ON_FREE guard in dynostatic-buffer.c), not the layout of
-# dynostatic_buffer_t, so it stays PRIVATE to the library translation unit.
-# $<BOOL:...> expands to 1/0, matching the #if test regardless of consumer.
-target_compile_definitions(dynostatic_buffer PRIVATE
+# DS_ZERO_ON_FREE only changes ds_free()'s runtime behaviour, not the layout of
+# dynostatic_buffer_t, but it is still PUBLIC: consumers (and the unit tests,
+# which assert that delivered blocks arrive clean) must see the same policy the
+# library was built with. $<BOOL:...> expands to 1/0.
+target_compile_definitions(dynostatic_buffer PUBLIC
                            DS_ZERO_ON_FREE=$<BOOL:${DS_ZERO_ON_FREE}>
                            )

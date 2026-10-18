@@ -65,7 +65,9 @@ jobs:
 
       - name: Build and test with Bazel
         if: matrix.system == 'bazel'
-        run: bazel test //...
+        run: |
+          bazel test //...
+          bazel test //... --//library:zero_on_free=false
 
       - name: Build with Make
         if: matrix.system == 'make'
@@ -92,6 +94,12 @@ jobs:
             preset: dev
             cc: clang
             cxx: clang++
+          # Same as above with DS_ZERO_ON_FREE=OFF, so both free policies run.
+          - name: GCC, ASan+UBSan, no zero-on-free
+            os: ubuntu-latest
+            preset: dev-no-zero-on-free
+            cc: gcc
+            cxx: g++
           - name: GCC 32-bit
             os: ubuntu-latest
             preset: dev-m32
@@ -144,6 +152,11 @@ jobs:
       - name: Run tests
         working-directory: tests/unit/ceedling
         run: ceedling test:all
+
+      # Rerun the suite with the library built with DS_ZERO_ON_FREE=0.
+      - name: Run tests (no zero-on-free)
+        working-directory: tests/unit/ceedling
+        run: ceedling --mixin=zero_on_free_off test:all
 
   coverage:
     name: Test coverage
