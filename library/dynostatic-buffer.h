@@ -311,6 +311,15 @@ ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  * a freed interior block is parked for reuse by requests fitting its
  * capacity. On success *p_memory is set to NULL.
  *
+ * @warning Double-free detection is best-effort. A block is identified only
+ *          by its start address, and a later allocation that fits reuses
+ *          a freed block's address. From then on a stale copy of the old
+ *          pointer cannot be told apart from the new owner's pointer:
+ *          ds_free() through it returns ERROR_DS_OK and releases the NEW
+ *          owner's block, which the next allocation may hand to a third
+ *          caller while it is still in use. Only *p_memory is set to NULL;
+ *          clear every other copy of the pointer yourself.
+ *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
  * @param[in, out] p_memory In: address of a live block. Out: NULL on success,
  *                          unchanged on failure.
@@ -322,7 +331,9 @@ ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  *                                   arena.
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND *p_memory is inside the arena but is
  *                                      not the start of a live block —
- *                                      typically a double free or an
+ *                                      typically a double free (detected
+ *                                      only until the address is reused,
+ *                                      see the warning above) or an
  *                                      interior pointer.
  */
 ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory);
@@ -374,6 +385,10 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  *
  * On any failure the original block and *p_memory are left fully intact.
  *
+ * @warning As with ds_free(), a stale pointer whose address a later
+ *          allocation has reused is accepted: ds_realloc() then resizes,
+ *          moves or frees the NEW owner's block.
+ *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
  * @param[in, out] p_memory In: NULL or address of a live block. Out: address
  *                          of the resized block (may differ from the input),
@@ -388,7 +403,8 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  * @retval ERROR_DS_MEMORY_OUT_OF_DS *p_memory lies outside this instance's
  *                                   arena.
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND *p_memory is not the start of a live
- *                                      block (double free / interior pointer).
+ *                                      block (double free before the address
+ *                                      is reused / interior pointer).
  * @retval ERROR_DS_NO_ALLOCATORS No free record for the moved block.
  * @retval ERROR_DS_NO_MEMORY No region can hold the grown block.
  */

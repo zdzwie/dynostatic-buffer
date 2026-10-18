@@ -120,6 +120,25 @@ msgstr ""
 "samej zmiennej jest bezpieczne."
 
 #: ../../usage.rst:61
+msgid ""
+"Double-free detection is best-effort. Blocks are identified only by their "
+"start address, and the next allocation that fits reuses a freed block's "
+"address. After that, a stale copy of the old pointer looks exactly like the "
+"new owner's pointer: :c:func:`ds_free` or :c:func:`ds_realloc` through it "
+"succeeds and acts on the *new* owner's block. :c:func:`ds_free` clears only "
+"the variable you pass it, so set every other copy of the pointer to "
+"``NULL`` yourself."
+msgstr ""
+"Wykrywanie podwójnego zwolnienia działa w miarę możliwości. Bloki są "
+"rozpoznawane wyłącznie po adresie początku, a kolejna pasująca alokacja "
+"ponownie używa adresu zwolnionego bloku. Od tej chwili nieaktualna kopia "
+"starego wskaźnika wygląda dokładnie tak samo jak wskaźnik nowego właściciela:"
+" :c:func:`ds_free` lub :c:func:`ds_realloc` wywołane przez nią kończą się "
+"powodzeniem i działają na bloku *nowego* właściciela. :c:func:`ds_free` "
+"zeruje tylko przekazaną mu zmienną, więc każdą inną kopię wskaźnika ustaw "
+"na ``NULL`` samodzielnie."
+
+#: ../../usage.rst:61
 msgid "Zero-initialized arrays with ``ds_calloc``"
 msgstr "Wyzerowane tablice za pomocą ``ds_calloc``"
 

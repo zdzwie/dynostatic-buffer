@@ -153,6 +153,17 @@ msgstr ""
 "środku bloku). Przekazuj z powrotem wyłącznie dokładnie ten wskaźnik, który "
 "zwrócił alokator."
 
+#: ../../error-codes.rst:77
+msgid ""
+"A double free is reported only while the freed address has not been reused."
+" Once a later allocation gets the same address, freeing a stale copy of the "
+"old pointer succeeds and releases the new owner's block (see :doc:`usage`)."
+msgstr ""
+"Podwójne zwolnienie jest zgłaszane tylko dopóki zwolniony adres nie zostanie"
+" ponownie użyty. Gdy późniejsza alokacja otrzyma ten sam adres, zwolnienie "
+"nieaktualnej kopii starego wskaźnika kończy się powodzeniem i zwalnia blok "
+"nowego właściciela (zobacz :doc:`usage`)."
+
 #: ../../error-codes.rst:79
 msgid ""
 "The ``*p_memory`` handed to :c:func:`ds_malloc` / :c:func:`ds_calloc` "

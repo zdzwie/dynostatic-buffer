@@ -26,8 +26,9 @@ Highlights
 * **Bounded and configurable.** The arena size, the maximum number of live
   allocations, the per-allocation cap and the alignment are all fixed at
   compile time (see :doc:`configuration`).
-* **Safer than raw ``malloc``.** Double frees, interior-pointer frees, foreign
-  pointers and leaking overwrites are detected and reported as error codes
+* **Safer than raw ``malloc``.** Double frees (until the freed address is
+  reused), interior-pointer frees, foreign pointers and leaking overwrites
+  are detected and reported as error codes
   rather than corrupting memory. Optional bounds-checked writes
   (:c:func:`ds_safe_memory_set`, :c:func:`ds_safe_memory_copy`) guard
   against buffer overruns.

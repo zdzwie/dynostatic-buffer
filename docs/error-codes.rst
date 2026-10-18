@@ -74,6 +74,11 @@ Reference
    Typically a double free or an interior pointer (an address partway into a
    block). Only pass back the exact pointer the allocator returned.
 
+   A double free is reported only while the freed address has not been reused.
+   Once a later allocation gets the same address, freeing a stale copy of the
+   old pointer succeeds and releases the new owner's block (see
+   :doc:`usage`).
+
 .. c:macro:: ERROR_DS_PTR_ALLOC_YET
 
    The ``*p_memory`` handed to :c:func:`ds_malloc` / :c:func:`ds_calloc` already
