@@ -1,5 +1,25 @@
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_flag")
 load("@rules_cc//cc:defs.bzl", "cc_library")
+
+# Alignment of returned pointers (DS_ALIGNMENT). Empty by default, which leaves
+# it undefined so the header default alignof(ds_max_align_t) applies; set it
+# with e.g. --//library:alignment=8. The header rejects values above the
+# platform's strictest fundamental alignment.
+_ALIGNMENTS = ["4", "8", "16"]
+
+string_flag(
+    name = "alignment",
+    build_setting_default = "",
+    values = [""] + _ALIGNMENTS,
+)
+
+[
+    config_setting(
+        name = "alignment_" + a,
+        flag_values = {":alignment": a},
+    )
+    for a in _ALIGNMENTS
+]
 
 # Zero the contents of freed blocks (DS_ZERO_ON_FREE). On by default; disable
 # with --//library:zero_on_free=false (or @dynostatic_buffer//library:... from
@@ -20,7 +40,8 @@ cc_library(
     hdrs = ["dynostatic-buffer.h"],
     # These defines change the layout of dynostatic_buffer_t, so they must be
     # visible to every consumer of the header (example, unit tests), matching
-    # the PUBLIC compile definitions in the CMake build. DS_ZERO_ON_FREE does
+    # the PUBLIC compile definitions in the CMake build. DS_ALIGNMENT is a
+    # layout define as well, but only when set explicitly. DS_ZERO_ON_FREE does
     # not change the layout, but it is public too, so the unit tests see the
     # policy the library was built with and can assert on it.
     defines = [
@@ -31,7 +52,10 @@ cc_library(
     ] + select({
         ":zero_on_free_disabled": ["DS_ZERO_ON_FREE=0"],
         "//conditions:default": ["DS_ZERO_ON_FREE=1"],
-    }),
+    }) + select(
+        {":alignment_" + a: ["DS_ALIGNMENT=" + a] for a in _ALIGNMENTS} |
+        {"//conditions:default": []},
+    ),
     includes = ["."],
     visibility = ["//visibility:public"],
 )

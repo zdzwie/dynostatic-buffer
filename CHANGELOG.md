@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `DS_ZERO_ON_FREE` is now enabled by default in the header and in every build system (CMake, Bazel, Make), matching the documented contract; set it to `0` to keep the old behaviour (CMake `-DDS_ZERO_ON_FREE=OFF`, Make `DS_ZERO_ON_FREE=0`, Bazel `--//library:zero_on_free=false`). The define is now public, so consumers and the unit tests see the policy the library was built with, and any non-zero value enables it (previously only `1`). The unit tests run in both modes.
+- `DS_ALIGNMENT` is now a build option in CMake (`-DDS_ALIGNMENT=<n>`), Bazel (`--//library:alignment=<n>`) and Make (`DS_ALIGNMENT=<n>`). When set, it is passed to the library and all its consumers like the other layout defines; previously a value set only for the library gave consumers a different `dynostatic_buffer_t` layout. Left unset, the header default applies as before.
 - Default `DS_ALIGNMENT` is now `alignof(ds_max_align_t)` (16 on typical 64-bit hosts) instead of 4, so returned pointers are aligned for any fundamental type like `malloc` (previously 8-byte types such as `uint64_t`, `double` and 64-bit pointers could be misaligned). This changes the layout of `dynostatic_buffer_t` and the per-block rounding; custom `DS_MAX_ALLOCATION_SIZE` values must now be a multiple of the new alignment. Define `DS_ALIGNMENT` explicitly to keep the old behaviour.
 
 ## [1.0.0] - 2026.08.16

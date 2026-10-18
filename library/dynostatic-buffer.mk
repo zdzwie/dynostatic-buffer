@@ -25,6 +25,8 @@
 #   DS_ZERO_ON_FREE               1 (default) to zero freed blocks, 0 to disable
 #   DS_BUFFER_MEMORY_SIZE, DS_LOG_ENABLE,
 #   DS_MAX_ALLOCATION_COUNT, DS_MAX_ALLOCATION_SIZE   layout defines
+#   DS_ALIGNMENT                  layout define; empty (default) uses the
+#                                 header default alignof(ds_max_align_t)
 #
 # Exported for the including project to use:
 #   DYNOSTATIC_BUFFER_DIR         directory of this library
@@ -76,6 +78,13 @@ DYNOSTATIC_BUFFER_DEFINES := \
 	-DDS_MAX_ALLOCATION_COUNT=$(DS_MAX_ALLOCATION_COUNT) \
 	-DDS_MAX_ALLOCATION_SIZE=$(DS_MAX_ALLOCATION_SIZE) \
 	-DDS_ZERO_ON_FREE=$(DS_ZERO_ON_FREE)
+
+# DS_ALIGNMENT also changes the layout, but its default is computed by the
+# header (alignof), so it is passed only when set explicitly.
+DS_ALIGNMENT ?=
+ifneq ($(strip $(DS_ALIGNMENT)),)
+DYNOSTATIC_BUFFER_DEFINES += -DDS_ALIGNMENT=$(DS_ALIGNMENT)
+endif
 
 # Flags a consumer must use when compiling its own code that includes the
 # public header (the defines above alter the struct layout).

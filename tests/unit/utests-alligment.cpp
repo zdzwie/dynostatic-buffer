@@ -22,6 +22,11 @@ class Alignment_Param_Tests : public Alignment_Tests,
 template <typename T>
 static void AllocStoreAfterPadding(dynostatic_buffer_t *p_buf, T value)
 {
+    /* A lowered DS_ALIGNMENT only guarantees types with alignof <= DS_ALIGNMENT. */
+    if (alignof(T) > DS_ALIGNMENT) {
+        return;
+    }
+
     void *pad = nullptr;
     T *p = nullptr;
     ASSERT_EQ(ds_malloc(p_buf, &pad, 1u), ERROR_DS_OK);

@@ -66,6 +66,13 @@ Options
    then pointers are only valid for types whose alignment does not exceed
    ``DS_ALIGNMENT``.
 
+   The default is computed by the compiler, so it can differ between
+   translation units built with different ABI flags (e.g. ``-mlong-double-64``).
+   If the library and your code are not built with the same flags, set the
+   value explicitly. Every build system then passes it to the library and
+   to all of its consumers: CMake ``-DDS_ALIGNMENT=8``, Make
+   ``DS_ALIGNMENT=8``, Bazel ``--//library:alignment=8``.
+
 .. c:macro:: DS_ZERO_ON_FREE
 
    *Default:* ``1``.

@@ -1,6 +1,8 @@
 # Declared here rather than in the top-level project, so a consumer that pulls
 # in only this directory (add_subdirectory(library)) gets the same default.
 option(DS_ZERO_ON_FREE "Zero the contents of freed blocks in dynostatic-buffer" ON)
+set(DS_ALIGNMENT "" CACHE STRING
+    "Alignment of returned pointers (power of two); empty uses the header default alignof(ds_max_align_t)")
 
 add_library(dynostatic_buffer dynostatic-buffer.c)
 include(../scripts/cmake/generate_doc.cmake)
@@ -25,6 +27,13 @@ target_compile_definitions(dynostatic_buffer PUBLIC
                            DS_MAX_ALLOCATION_COUNT=10
                            DS_MAX_ALLOCATION_SIZE=512
                            )
+
+# DS_ALIGNMENT changes the layout too (alignas on the arena, block rounding),
+# so an explicit value is PUBLIC like the defines above. Left empty, nothing is
+# defined and every translation unit falls back to the same header default.
+if(NOT DS_ALIGNMENT STREQUAL "")
+    target_compile_definitions(dynostatic_buffer PUBLIC DS_ALIGNMENT=${DS_ALIGNMENT})
+endif()
 
 # DS_ZERO_ON_FREE only changes ds_free()'s runtime behaviour, not the layout of
 # dynostatic_buffer_t, but it is still PUBLIC: consumers (and the unit tests,

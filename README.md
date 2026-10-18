@@ -70,6 +70,7 @@ clashing with the host project. Useful knobs (all overridable):
 | `DYNOSTATIC_BUFFER_A` | path to the built static library |
 | `DYNOSTATIC_BUFFER_BUILD_DIR` | where artefacts are written (default `build/dynostatic-buffer`) |
 | `DS_ZERO_ON_FREE` | zero freed blocks (default `1`); set to `0` to disable |
+| `DS_ALIGNMENT` | alignment of returned pointers; empty (default) uses the header default `alignof(ds_max_align_t)` |
 | `DS_BUFFER_MEMORY_SIZE`, `DS_MAX_ALLOCATION_COUNT`, ... | buffer layout configuration |
 
 ## Examples

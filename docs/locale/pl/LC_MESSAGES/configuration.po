@@ -153,6 +153,22 @@ msgstr ""
 "mikrokontrolerze) oszczędza pamięć, ale wtedy wskaźniki są poprawne tylko "
 "dla typów, których wyrównanie nie przekracza ``DS_ALIGNMENT``."
 
+#: ../../configuration.rst:68
+msgid ""
+"The default is computed by the compiler, so it can differ between "
+"translation units built with different ABI flags (e.g. ``-mlong-double-64``)."
+" If the library and your code are not built with the same flags, set the "
+"value explicitly. Every build system then passes it to the library and to "
+"all of its consumers: CMake ``-DDS_ALIGNMENT=8``, Make ``DS_ALIGNMENT=8``, "
+"Bazel ``--//library:alignment=8``."
+msgstr ""
+"Wartość domyślna jest obliczana przez kompilator, więc może się różnić między "
+"jednostkami translacji zbudowanymi z różnymi flagami ABI (np. "
+"``-mlong-double-64``). Jeśli biblioteka i Twój kod nie są budowane z tymi "
+"samymi flagami, ustaw wartość jawnie. Każdy system budowania przekaże ją "
+"wtedy bibliotece i wszystkim jej użytkownikom: CMake ``-DDS_ALIGNMENT=8``, "
+"Make ``DS_ALIGNMENT=8``, Bazel ``--//library:alignment=8``."
+
 #: ../../configuration.rst:65
 msgid "*Default:* ``1``."
 msgstr "*Domyślnie:* ``1``."

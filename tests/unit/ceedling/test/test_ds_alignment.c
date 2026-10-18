@@ -17,16 +17,20 @@
 #include "dynostatic-buffer.h"
 #include "utests-common.h"
 
-#define DS_TEST_ALLOC_STORE_AFTER_PADDING(type, value)                                            \
-    do {                                                                                          \
-        void *pad = NULL;                                                                         \
-        type *p = NULL;                                                                           \
-        TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, &pad, 1u));                          \
-        TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, sizeof(type)));         \
-        TEST_ASSERT_EQUAL_size_t_MESSAGE(0u, ((uintptr_t)p) % alignof(type),                      \
-                                         "block not aligned for " #type);                         \
-        *p = (value);                                                                             \
-        TEST_ASSERT_TRUE_MESSAGE(*p == (value), "value stored in " #type " block not read back"); \
+/* A lowered DS_ALIGNMENT only guarantees types with alignof <= DS_ALIGNMENT,
+ * so stricter types are skipped. */
+#define DS_TEST_ALLOC_STORE_AFTER_PADDING(type, value)                                                \
+    do {                                                                                              \
+        if (alignof(type) <= DS_ALIGNMENT) {                                                          \
+            void *pad = NULL;                                                                         \
+            type *p = NULL;                                                                           \
+            TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, &pad, 1u));                          \
+            TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, sizeof(type)));         \
+            TEST_ASSERT_EQUAL_size_t_MESSAGE(0u, ((uintptr_t)p) % alignof(type),                      \
+                                             "block not aligned for " #type);                         \
+            *p = (value);                                                                             \
+            TEST_ASSERT_TRUE_MESSAGE(*p == (value), "value stored in " #type " block not read back"); \
+        }                                                                                             \
     } while (0)
 
 /** Sizes from INSTANTIATE_TEST_SUITE_P(Various_Sizes, ...). */
