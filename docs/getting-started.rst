@@ -57,6 +57,7 @@ Bazel
 
    bazel build //...
    bazel test //...
+   bazel test //... --//library:zero_on_free=false   # DS_ZERO_ON_FREE=0
    bazel run //examples:basic_example
 
 See the top-level ``README`` for the full build matrix.

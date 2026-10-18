@@ -245,7 +245,7 @@ TEST_F(Getter_Tests, Zero_When_Slots_Exhausted_With_Memory_Left)
 
 TEST_F(Getter_Tests, Full_Prefix_Reports_Largest_Parked_Capacity)
 {
-    const size_t big = AlignUp(8u);
+    const size_t big = AlignUp(static_cast<size_t>(DS_ALIGNMENT) + 1u); /* two alignment units */
     const size_t small = AlignUp(1u);
     ASSERT_GT(big, small) << "premise: distinct capacities";
     ASSERT_LE(big + (static_cast<size_t>(DS_MAX_ALLOCATION_COUNT) - 1u) * small,

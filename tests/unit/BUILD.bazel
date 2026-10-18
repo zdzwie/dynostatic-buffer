@@ -1,5 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
 
+# Run with --//library:zero_on_free=false to test the library with
+# DS_ZERO_ON_FREE=0.
 cc_test(
     name = "ds_tests",
     srcs = [

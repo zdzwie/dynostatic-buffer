@@ -168,3 +168,61 @@ TEST_F(Safe_Memory_Set_Tests, Rejects_Pointer_In_Parked_Block)
 
     ASSERT_EQ(ds_safe_memory_set(&buf_, alias + 2, kValue, 4u), ERROR_DS_ALLOCATOR_NOT_FOUND);
 }
+
+/*--------------------- Requested-size bound (M-1) ---------------------*/
+/* The bound is the size the caller asked for, not the block capacity. */
+
+TEST_F(Safe_Memory_Set_Tests, Rejects_Alignment_Slack)
+{
+    const size_t req = 3u; /* capacity AlignUp(3) > 3 */
+    uint8_t *p = NULL;
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), req), ERROR_DS_OK);
+    ASSERT_GT(AlignUp(req), req);
+    std::memset(p, kPrefill, AlignUp(req));
+
+    ASSERT_EQ(ds_safe_memory_set(&buf_, p, kValue, req), ERROR_DS_OK);
+    ASSERT_EQ(ds_safe_memory_set(&buf_, p, kValue, req + 1u), ERROR_DS_NO_MEMORY);
+    ASSERT_EQ(ds_safe_memory_set(&buf_, p + req, kValue, 1u), ERROR_DS_NO_MEMORY) << "fill starting in the slack";
+    for (size_t i = req; i < AlignUp(req); i++) {
+        ASSERT_EQ(p[i], kPrefill) << "slack byte " << i << " modified";
+    }
+}
+
+TEST_F(Safe_Memory_Set_Tests, Rejects_Spare_Capacity_Of_Reused_Block)
+{
+    const size_t big = AlignUp(64u);
+    const size_t small = 4u;
+    uint8_t *p_big = NULL;
+    uint8_t *guard = NULL;
+    uint8_t *p_small = NULL;
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p_big), big), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&guard), 1u), ERROR_DS_OK); /* pins the head */
+    uint8_t *alias = p_big;
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&p_big)), ERROR_DS_OK); /* parked DS_FREE */
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p_small), small), ERROR_DS_OK);
+    ASSERT_EQ(p_small, alias) << "precondition: the parked block is reused";
+    std::memset(p_small, kPrefill, big);
+
+    ASSERT_EQ(ds_safe_memory_set(&buf_, p_small, kValue, small), ERROR_DS_OK);
+    ASSERT_EQ(ds_safe_memory_set(&buf_, p_small, kValue, big), ERROR_DS_NO_MEMORY);
+    for (size_t i = small; i < big; i++) {
+        ASSERT_EQ(p_small[i], kPrefill) << "byte " << i << " modified by a rejected call";
+    }
+}
+
+TEST_F(Safe_Memory_Set_Tests, Rejects_Spare_Capacity_After_Shrink)
+{
+    const size_t len = AlignUp(16u);
+    uint8_t *p = NULL;
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), len), ERROR_DS_OK);
+    uint8_t *before = p;
+    ASSERT_EQ(ds_realloc(&buf_, reinterpret_cast<void **>(&p), 1u), ERROR_DS_OK);
+    ASSERT_EQ(p, before) << "precondition: shrink happens in place";
+    std::memset(p, kPrefill, len);
+
+    ASSERT_EQ(ds_safe_memory_set(&buf_, p, kValue, 1u), ERROR_DS_OK);
+    ASSERT_EQ(ds_safe_memory_set(&buf_, p, kValue, 4u), ERROR_DS_NO_MEMORY);
+    for (size_t i = 1u; i < len; i++) {
+        ASSERT_EQ(p[i], kPrefill) << "byte " << i << " modified by a rejected call";
+    }
+}

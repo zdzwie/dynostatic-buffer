@@ -1,0 +1,10 @@
+# Mixin: run the suite with the library built with DS_ZERO_ON_FREE=0.
+#   ceedling --mixin=zero_on_free_off test:all
+---
+:project:
+  # Separate build root, so objects built with the default policy are not reused.
+  :build_root: build/zero_on_free_off
+
+:defines:
+  :test:
+    - DS_ZERO_ON_FREE=0

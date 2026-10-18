@@ -155,3 +155,31 @@ TEST_F(Realloc_Tests, Rejects_Foreign_And_Interior_Pointers)
     ASSERT_EQ(ds_realloc(&buf_, &foreign, 32), ERROR_DS_MEMORY_OUT_OF_DS);
     ASSERT_EQ(foreign, &stack_var);
 }
+
+TEST_F(Realloc_Tests, Shrink_Within_Existing_Aligned_Capacity_Keeps_Pointer)
+{
+    void *p = NULL;
+    uint8_t usage = 0xFF;
+
+    ASSERT_EQ(ds_realloc(&buf_, &p, 16), ERROR_DS_OK);
+    void *const before = p;
+
+    ASSERT_EQ(ds_realloc(&buf_, &p, 13), ERROR_DS_OK);
+    ASSERT_EQ(p, before);
+
+    ASSERT_EQ(ds_get_memory_usage(&buf_, &usage), ERROR_DS_OK);
+    ASSERT_EQ(usage, dstest::ExpectedUsage(dstest::AlignUp(16u)));
+}
+
+TEST_F(Realloc_Tests, Grow_Trailing_Block_After_Aligned_Shrink)
+{
+    void *p = NULL;
+
+    ASSERT_EQ(ds_realloc(&buf_, &p, 16), ERROR_DS_OK);
+    ASSERT_EQ(ds_realloc(&buf_, &p, 13), ERROR_DS_OK);
+
+    void *const before = p;
+
+    ASSERT_EQ(ds_realloc(&buf_, &p, 32), ERROR_DS_OK);
+    ASSERT_EQ(p, before);
+}

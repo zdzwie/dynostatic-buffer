@@ -103,7 +103,8 @@ spoken for."
 Alignment
 ---------
 
-All returned pointers are aligned to :c:macro:`DS_ALIGNMENT` (default 4 bytes).
+All returned pointers are aligned to :c:macro:`DS_ALIGNMENT` (by default the
+platform's strictest fundamental alignment, as with ``malloc``).
 The arena base is over-aligned with ``alignas`` so that every aligned offset is
 also correctly aligned in absolute terms. Compile-time assertions enforce that
 ``DS_ALIGNMENT`` is a power of two, at least large enough for 32-bit types, and

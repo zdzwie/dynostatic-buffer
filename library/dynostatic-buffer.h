@@ -46,7 +46,7 @@ extern "C" {
 #endif
 
 #ifndef DS_ZERO_ON_FREE        /**< If You not use CMake and KConfig. */
-    #define DS_ZERO_ON_FREE 0u /**< Zero the contents of freed blocks in dynostatic-buffer. */
+    #define DS_ZERO_ON_FREE 1u /**< Zero the contents of freed blocks in dynostatic-buffer (1 enabled). */
 #endif
 
 #ifndef DS_MAX_ALLOCATION_COUNT         /**< If You not use CMake and KConfig. */
@@ -55,10 +55,6 @@ extern "C" {
 
 #ifndef DS_MAX_ALLOCATION_SIZE          /**< If You not use CMake and KConfig. */
     #define DS_MAX_ALLOCATION_SIZE 256u /**< Set maximal number of allocation which can be made in dynostatic-buffer. */
-#endif
-
-#ifndef DS_ALIGNMENT
-    #define DS_ALIGNMENT (4u) /**< Alignment for memory allocations. */
 #endif
 
 #ifdef __cplusplus
@@ -75,6 +71,24 @@ typedef struct {
     void *ds_ptr_;
 } ds_max_align_t;
 
+/**
+ * Alignment for memory allocations. Defaults to the strictest fundamental
+ * alignment, so like malloc() every returned pointer is suitably aligned for
+ * any object type (double, uint64_t, pointers, ...). It may be lowered on
+ * purpose to save memory on small targets, but then returned pointers are only
+ * valid for types with alignof <= DS_ALIGNMENT.
+ *
+ * It cannot be raised above the default: over-alignment (e.g. 32 or 64 for
+ * cache lines or DMA) is rejected at compile time.
+ *
+ * The default is an alignof expression, not an integer literal, so it cannot
+ * be used in a preprocessor #if; define DS_ALIGNMENT explicitly if you need
+ * that.
+ */
+#ifndef DS_ALIGNMENT
+    #define DS_ALIGNMENT ((size_t)alignof(ds_max_align_t))
+#endif
+
 /** @cond DOXYGEN_SHOULD_SKIP_THIS */
 DS_STATIC_ASSERT((DS_ALIGNMENT & (DS_ALIGNMENT - 1u)) == 0u, "DS_ALIGNMENT must be a power of two");
 DS_STATIC_ASSERT(DS_ALIGNMENT >= alignof(uint32_t), "DS_ALIGNMENT must at least satisfy 32-bit types");
@@ -87,6 +101,7 @@ DS_STATIC_ASSERT((DS_MAX_ALLOCATION_SIZE % DS_ALIGNMENT) == 0u, "DS_MAX_ALLOCATI
 /* Overflow guard for ds_align_up (discussed at #7 — closes the implicit
      * size + (DS_ALIGNMENT - 1) wraparound relationship for free): */
 DS_STATIC_ASSERT(DS_MAX_ALLOCATION_SIZE <= (SIZE_MAX - DS_ALIGNMENT) + 1u, "ds_align_up may overflow for sizes near SIZE_MAX");
+DS_STATIC_ASSERT(DS_BUFFER_MEMORY_SIZE <= (UINT32_MAX / 100u), "DS_BUFFER_MEMORY_SIZE too large for the usage percentage arithmetic");
 /** @endcond */
 
 /*---------------Types----------------*/
@@ -162,13 +177,19 @@ typedef enum {
  * 3. Gapless partition: non-DS_NOT_USED records tile [0, data_head) exactly:
  *    head[0] == 0 and head[i+1] == head[i] + size[i]. In particular the
  *    block ending at data_head always sits at the highest touched index.
+ * 4. Payload bound: for DS_ALLOCATED records
+ *    0 < requested_size <= size and ds_align_up(requested_size) <= size.
+ *    For DS_FREE and DS_NOT_USED records requested_size == 0.
  */
 typedef struct {
-    size_t head; /**< Offset of the block from the start of dynostatic_buffer_t::memory.
+    size_t head;           /**< Offset of the block from the start of dynostatic_buffer_t::memory.
                       Meaningful only when allocation_status != DS_NOT_USED. */
-    size_t size; /**< Physical capacity of the block (requested size aligned up to
+    size_t size;           /**< Physical capacity of the block (requested size aligned up to
                       DS_ALIGNMENT); preserved on reuse. Meaningful only when
                       allocation_status != DS_NOT_USED. */
+    size_t requested_size; /**< Bytes requested by the current owner. Meaningful ONLY
+                            when allocation_status == DS_ALLOCATED; zero and
+                            meaningless for DS_FREE and DS_NOT_USED records. */
 
     ds_allocator_status_t allocation_status; /**< Lifecycle state of this record; governs
                                                   the meaning of head and size. */
@@ -297,6 +318,15 @@ ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  * a freed interior block is parked for reuse by requests fitting its
  * capacity. On success *p_memory is set to NULL.
  *
+ * @warning Double-free detection is best-effort. A block is identified only
+ *          by its start address, and a later allocation that fits reuses
+ *          a freed block's address. From then on a stale copy of the old
+ *          pointer cannot be told apart from the new owner's pointer:
+ *          ds_free() through it returns ERROR_DS_OK and releases the NEW
+ *          owner's block, which the next allocation may hand to a third
+ *          caller while it is still in use. Only *p_memory is set to NULL;
+ *          clear every other copy of the pointer yourself.
+ *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
  * @param[in, out] p_memory In: address of a live block. Out: NULL on success,
  *                          unchanged on failure.
@@ -308,7 +338,9 @@ ds_err_code_t ds_malloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  *                                   arena.
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND *p_memory is inside the arena but is
  *                                      not the start of a live block —
- *                                      typically a double free or an
+ *                                      typically a double free (detected
+ *                                      only until the address is reused,
+ *                                      see the warning above) or an
  *                                      interior pointer.
  */
 ds_err_code_t ds_free(dynostatic_buffer_t *p_ds_buffer, void **p_memory);
@@ -360,11 +392,15 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  *
  * On any failure the original block and *p_memory are left fully intact.
  *
+ * @warning As with ds_free(), a stale pointer whose address a later
+ *          allocation has reused is accepted: ds_realloc() then resizes,
+ *          moves or frees the NEW owner's block.
+ *
  * @param[in, out] p_ds_buffer Pointer to dynostatic-buffer structure.
  * @param[in, out] p_memory In: NULL or address of a live block. Out: address
  *                          of the resized block (may differ from the input),
  *                          NULL after size == 0, unchanged on failure.
- * @param[in] size New size in bytes (0..DS_MAX_ALLOCATION_SIZE).
+ * @param[in] requested_size New size in bytes (0..DS_MAX_ALLOCATION_SIZE).
  *
  * @retval ERROR_DS_OK Operation completed as described above.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
@@ -374,11 +410,12 @@ ds_err_code_t ds_calloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_
  * @retval ERROR_DS_MEMORY_OUT_OF_DS *p_memory lies outside this instance's
  *                                   arena.
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND *p_memory is not the start of a live
- *                                      block (double free / interior pointer).
+ *                                      block (double free before the address
+ *                                      is reused / interior pointer).
  * @retval ERROR_DS_NO_ALLOCATORS No free record for the moved block.
  * @retval ERROR_DS_NO_MEMORY No region can hold the grown block.
  */
-ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t size);
+ds_err_code_t ds_realloc(dynostatic_buffer_t *p_ds_buffer, void **p_memory, size_t requested_size);
 
 /**
  * @brief Get the arena occupancy as a percentage (0..100, rounded down).
@@ -471,6 +508,10 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer);
  *
  * Save copy means, that function checks, that given memory is part of got ds_buffer and allocation assigned to given
  * buffer have destination memory size enough to copy source memory. If not, function returns error code.
+ * Source and destination regions must not overlap; overlapping regions are rejected with ERROR_DS_INVALID_ARG.
+ * The bound is the size the current owner requested (ds_malloc, ds_calloc or the latest ds_realloc), not the
+ * block's physical capacity: bytes past that size (alignment padding, or the spare capacity of a reused or shrunk
+ * block) are rejected even though they lie inside the block.
  *
  * @param[in] p_alloc_holder Pointer to dynostatic-buffer structure holding the destination memory.
  * @param[in, out] p_dst_memory Pointer to destination memory.
@@ -479,10 +520,10 @@ ds_err_code_t ds_deinit_allocation(dynostatic_buffer_t *p_ds_buffer);
  *
  * @retval ERROR_DS_OK Memory was properly copied.
  * @retval ERROR_DS_NO_INIT Dynostatic-buffer is not initialized.
- * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
+ * @retval ERROR_DS_INVALID_ARG Given parameters are invalid, or source and destination regions overlap.
  * @retval ERROR_DS_MEMORY_OUT_OF_DS Given memory is not part of dynostatic buffer.
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND Given memory is not part of any allocation in dynostatic buffer.
- * @retval ERROR_DS_NO_MEMORY Given memory is not enough to copy source memory.
+ * @retval ERROR_DS_NO_MEMORY The copy would run past the requested size of the destination allocation.
  */
 ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, const void *p_src_memory, size_t src_size);
 
@@ -491,6 +532,9 @@ ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, voi
  *
  * Save copy means, that function checks, that given memory is part of got ds_buffer and allocation assigned to given
  * buffer have destination memory size enough to set memory. If not, function returns error code.
+ * The bound is the size the current owner requested (ds_malloc, ds_calloc or the latest ds_realloc), not the
+ * block's physical capacity: bytes past that size (alignment padding, or the spare capacity of a reused or shrunk
+ * block) are rejected even though they lie inside the block.
  *
  * @param[in] p_alloc_holder Pointer to dynostatic-buffer structure holding the destination memory.
  * @param[in, out] p_dst_memory Pointer to destination memory.
@@ -502,9 +546,9 @@ ds_err_code_t ds_safe_memory_copy(const dynostatic_buffer_t *p_alloc_holder, voi
  * @retval ERROR_DS_INVALID_ARG Given parameters are invalid.
  * @retval ERROR_DS_MEMORY_OUT_OF_DS Given memory is not part of dynostatic buffer.
  * @retval ERROR_DS_ALLOCATOR_NOT_FOUND Given memory is not part of any allocation in dynostatic buffer.
- * @retval ERROR_DS_NO_MEMORY Given memory is not enough to set the specified value.
+ * @retval ERROR_DS_NO_MEMORY The set would run past the requested size of the destination allocation.
  */
-ds_err_code_t ds_safe_memory_set(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, char value_to_set, size_t cnt_to_set);
+ds_err_code_t ds_safe_memory_set(const dynostatic_buffer_t *p_alloc_holder, void *p_dst_memory, uint8_t value_to_set, size_t cnt_to_set);
 
 #ifdef __cplusplus
 }

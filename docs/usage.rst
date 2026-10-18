@@ -57,6 +57,16 @@ Interior pointers, foreign pointers and double frees are rejected
 :c:macro:`ERROR_DS_MEMORY_OUT_OF_DS`) without corrupting anything. On success it
 NULLs your pointer, which is what makes reusing the same variable safe.
 
+.. warning::
+
+   Double-free detection is best-effort. Blocks are identified only by their
+   start address, and the next allocation that fits reuses a freed block's
+   address. After that, a stale copy of the old pointer looks exactly like the
+   new owner's pointer: :c:func:`ds_free` or :c:func:`ds_realloc` through it
+   succeeds and acts on the *new* owner's block. :c:func:`ds_free` clears only
+   the variable you pass it, so set every other copy of the pointer to
+   ``NULL`` yourself.
+
 Zero-initialized arrays with ``ds_calloc``
 ------------------------------------------
 

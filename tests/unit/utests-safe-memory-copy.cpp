@@ -133,7 +133,7 @@ TEST_F(Safe_Memory_Copy_Tests, Rejects_Wrapping_Size)
     ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), len), ERROR_DS_OK);
     std::memset(p, kPrefill, len);
 
-    uint8_t src[1] = { kPattern }; /* never read: the copy must not execute */
+    const uint8_t src[1] = { kPattern }; /* never read: the copy must not execute */
 
     ASSERT_EQ(ds_safe_memory_copy(&buf_, p, src, SIZE_MAX), ERROR_DS_NO_MEMORY);
     ASSERT_EQ(ds_safe_memory_copy(&buf_, p + 3, src, SIZE_MAX - 2u), ERROR_DS_NO_MEMORY);
@@ -226,5 +226,114 @@ TEST_F(Safe_Memory_Copy_Tests, Does_Not_Touch_Neighbour_Block)
 
     for (size_t i = 0; i < len; i++) {
         ASSERT_EQ(p2[i], kPrefill) << "neighbour byte " << i << " clobbered";
+    }
+}
+
+/*--------------------- Overlapping regions ---------------------*/
+
+/* memcpy on overlapping regions is UB, so a source that overlaps the
+ * destination (e.g. shifting data inside one block) must be rejected with
+ * no side effects — in both shift directions. */
+TEST_F(Safe_Memory_Copy_Tests, Rejects_Overlapping_Regions)
+{
+    const size_t len = AlignUp(32u);
+    const size_t shift = 4u;
+    const size_t copy_len = 16u;
+    uint8_t *p = nullptr;
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), len), ERROR_DS_OK);
+    for (size_t i = 0; i < len; i++) {
+        p[i] = static_cast<uint8_t>(i);
+    }
+
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p + shift, p, copy_len), ERROR_DS_INVALID_ARG);   /* forward */
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, p + shift, copy_len), ERROR_DS_INVALID_ARG);   /* backward */
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, p, copy_len), ERROR_DS_INVALID_ARG);           /* identical */
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p + shift, p, shift + 1u), ERROR_DS_INVALID_ARG); /* one byte shared */
+
+    for (size_t i = 0; i < len; i++) {
+        ASSERT_EQ(p[i], static_cast<uint8_t>(i)) << "byte " << i << " modified by a rejected call";
+    }
+}
+
+/* Boundary: regions that touch but do not share a byte are legal. */
+TEST_F(Safe_Memory_Copy_Tests, Accepts_Adjacent_Regions_In_Same_Block)
+{
+    const size_t len = AlignUp(32u);
+    const size_t half = len / 2u;
+    uint8_t *p = nullptr;
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), len), ERROR_DS_OK);
+    for (size_t i = 0; i < len; i++) {
+        p[i] = static_cast<uint8_t>(i);
+    }
+
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p + half, p, half), ERROR_DS_OK);
+
+    for (size_t i = 0; i < half; i++) {
+        ASSERT_EQ(p[i], static_cast<uint8_t>(i)) << "source byte " << i;
+        ASSERT_EQ(p[half + i], static_cast<uint8_t>(i)) << "copied byte " << i;
+    }
+}
+
+/*--------------------- Requested-size bound (M-1) ---------------------*/
+/* The bound is the size the caller asked for, not the block capacity. */
+
+TEST_F(Safe_Memory_Copy_Tests, Rejects_Alignment_Slack)
+{
+    const size_t req = 3u; /* capacity AlignUp(3) > 3 */
+    uint8_t *p = NULL;
+    uint8_t src[AlignUp(64u)];
+    std::memset(src, kPattern, sizeof(src));
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), req), ERROR_DS_OK);
+    ASSERT_GT(AlignUp(req), req);
+    std::memset(p, kPrefill, AlignUp(req));
+
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, src, req), ERROR_DS_OK);
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, src, req + 1u), ERROR_DS_NO_MEMORY);
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p + req, src, 1u), ERROR_DS_NO_MEMORY) << "copy starting in the slack";
+    for (size_t i = req; i < AlignUp(req); i++) {
+        ASSERT_EQ(p[i], kPrefill) << "slack byte " << i << " modified";
+    }
+}
+
+TEST_F(Safe_Memory_Copy_Tests, Rejects_Spare_Capacity_Of_Reused_Block)
+{
+    const size_t big = AlignUp(64u);
+    const size_t small = 4u;
+    uint8_t *p_big = NULL;
+    uint8_t *guard = NULL;
+    uint8_t *p_small = NULL;
+    uint8_t src[AlignUp(64u)];
+    std::memset(src, kPattern, sizeof(src));
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p_big), big), ERROR_DS_OK);
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&guard), 1u), ERROR_DS_OK); /* pins the head */
+    uint8_t *alias = p_big;
+    ASSERT_EQ(ds_free(&buf_, reinterpret_cast<void **>(&p_big)), ERROR_DS_OK); /* parked DS_FREE */
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p_small), small), ERROR_DS_OK);
+    ASSERT_EQ(p_small, alias) << "precondition: the parked block is reused";
+    std::memset(p_small, kPrefill, big);
+
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p_small, src, small), ERROR_DS_OK);
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p_small, src, big), ERROR_DS_NO_MEMORY);
+    for (size_t i = small; i < big; i++) {
+        ASSERT_EQ(p_small[i], kPrefill) << "byte " << i << " modified by a rejected call";
+    }
+}
+
+TEST_F(Safe_Memory_Copy_Tests, Rejects_Spare_Capacity_After_Shrink)
+{
+    const size_t len = AlignUp(16u);
+    uint8_t *p = NULL;
+    uint8_t src[AlignUp(64u)];
+    std::memset(src, kPattern, sizeof(src));
+    ASSERT_EQ(ds_malloc(&buf_, reinterpret_cast<void **>(&p), len), ERROR_DS_OK);
+    uint8_t *before = p;
+    ASSERT_EQ(ds_realloc(&buf_, reinterpret_cast<void **>(&p), 1u), ERROR_DS_OK);
+    ASSERT_EQ(p, before) << "precondition: shrink happens in place";
+    std::memset(p, kPrefill, len);
+
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, src, 1u), ERROR_DS_OK);
+    ASSERT_EQ(ds_safe_memory_copy(&buf_, p, src, 4u), ERROR_DS_NO_MEMORY);
+    for (size_t i = 1u; i < len; i++) {
+        ASSERT_EQ(p[i], kPrefill) << "byte " << i << " modified by a rejected call";
     }
 }

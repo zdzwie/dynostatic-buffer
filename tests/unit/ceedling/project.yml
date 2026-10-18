@@ -33,9 +33,12 @@
 
   :release_build: FALSE
 
+# `ceedling --mixin=zero_on_free_off test:all` reruns the suite with
+# DS_ZERO_ON_FREE=0 (see mixins/zero_on_free_off.yml).
 :mixins:
   :enabled: []
-  :load_paths: []
+  :load_paths:
+    - mixins
 
 :test_build:
   :use_assembly: FALSE
@@ -68,6 +71,12 @@
 # These symbols change the layout of dynostatic_buffer_t, so they must match
 # the CMake (library/CMakeLists.txt) and Bazel (library/BUILD.bazel) builds
 # exactly — otherwise the tests would exercise a differently sized allocator.
+# DS_ZERO_ON_FREE is deliberately not listed: mixins append to this list, so
+# the default run uses the header default (1) and the zero_on_free_off mixin
+# adds DS_ZERO_ON_FREE=0. DS_ALIGNMENT is left out for the same reason: like
+# the other builds, the default run uses the header default
+# alignof(ds_max_align_t); a mixin can append DS_ALIGNMENT=<n>. Ceedling
+# compiles the library and the tests with this one list, so they always agree.
 :defines:
   :test:
     - TEST
@@ -75,7 +84,6 @@
     - DS_LOG_ENABLE=1u
     - DS_MAX_ALLOCATION_COUNT=10
     - DS_MAX_ALLOCATION_SIZE=512
-    - DS_ZERO_ON_FREE=0
   :release: []
   :use_test_definition: FALSE
 

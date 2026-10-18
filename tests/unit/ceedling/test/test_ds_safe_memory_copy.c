@@ -156,7 +156,7 @@ void test_Safe_Memory_Copy_Rejects_Wrapping_Size(void)
 {
     const size_t len = DS_TEST_ALIGN_UP(16u);
     uint8_t *p = NULL;
-    uint8_t src[1] = { kPattern }; /* never read: the copy must not execute */
+    const uint8_t src[1] = { kPattern }; /* never read: the copy must not execute */
     size_t i;
 
     TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, len));
@@ -272,5 +272,130 @@ void test_Safe_Memory_Copy_Does_Not_Touch_Neighbour_Block(void)
     for (i = 0u; i < len; i++) {
         TEST_ASSERT_EQUAL_HEX8_MESSAGE(kPrefill, p2[i],
                                        DS_TEST_MSG("neighbour byte %zu clobbered", i));
+    }
+}
+
+/*--------------------- Overlapping regions ---------------------*/
+
+/* memcpy on overlapping regions is UB, so a source that overlaps the
+ * destination (e.g. shifting data inside one block) must be rejected with
+ * no side effects — in both shift directions. */
+void test_Safe_Memory_Copy_Rejects_Overlapping_Regions(void)
+{
+    const size_t len = DS_TEST_ALIGN_UP(32u);
+    const size_t shift = 4u;
+    const size_t copy_len = 16u;
+    uint8_t *p = NULL;
+    size_t i;
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, len));
+    for (i = 0u; i < len; i++) {
+        p[i] = (uint8_t)i;
+    }
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p + shift, p, copy_len));   /* forward */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p, p + shift, copy_len));   /* backward */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p, p, copy_len));           /* identical */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_INVALID_ARG, ds_safe_memory_copy(&buf_, p + shift, p, shift + 1u)); /* one byte shared */
+
+    for (i = 0u; i < len; i++) {
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE((uint8_t)i, p[i],
+                                       DS_TEST_MSG("byte %zu modified by a rejected call", i));
+    }
+}
+
+/* Boundary: regions that touch but do not share a byte are legal. */
+void test_Safe_Memory_Copy_Accepts_Adjacent_Regions_In_Same_Block(void)
+{
+    const size_t len = DS_TEST_ALIGN_UP(32u);
+    const size_t half = len / 2u;
+    uint8_t *p = NULL;
+    size_t i;
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, len));
+    for (i = 0u; i < len; i++) {
+        p[i] = (uint8_t)i;
+    }
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_safe_memory_copy(&buf_, p + half, p, half));
+
+    for (i = 0u; i < half; i++) {
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE((uint8_t)i, p[i], DS_TEST_MSG("source byte %zu", i));
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE((uint8_t)i, p[half + i], DS_TEST_MSG("copied byte %zu", i));
+    }
+}
+
+/*--------------------- Requested-size bound (M-1) ---------------------*/
+/* The bound is the size the caller asked for, not the block capacity. */
+
+void test_Safe_Memory_Copy_Rejects_Alignment_Slack(void)
+{
+    const size_t req = 3u; /* capacity DS_TEST_ALIGN_UP(3) > 3 */
+    uint8_t *p = NULL;
+    uint8_t src[DS_TEST_ALIGN_UP(64u)];
+    size_t i;
+
+    (void)memset(src, kPattern, sizeof(src));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, req));
+    TEST_ASSERT_GREATER_THAN_size_t(req, DS_TEST_ALIGN_UP(req));
+    (void)memset(p, kPrefill, DS_TEST_ALIGN_UP(req));
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_safe_memory_copy(&buf_, p, src, req));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_NO_MEMORY, ds_safe_memory_copy(&buf_, p, src, req + 1u));
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(ERROR_DS_NO_MEMORY, ds_safe_memory_copy(&buf_, p + req, src, 1u),
+                                   "copy starting in the slack");
+    for (i = req; i < DS_TEST_ALIGN_UP(req); i++) {
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE(kPrefill, p[i], DS_TEST_MSG("slack byte %zu modified", i));
+    }
+}
+
+void test_Safe_Memory_Copy_Rejects_Spare_Capacity_Of_Reused_Block(void)
+{
+    const size_t big = DS_TEST_ALIGN_UP(64u);
+    const size_t small = 4u;
+    uint8_t *p_big = NULL;
+    uint8_t *guard = NULL;
+    uint8_t *p_small = NULL;
+    uint8_t *alias;
+    uint8_t src[DS_TEST_ALIGN_UP(64u)];
+    size_t i;
+
+    (void)memset(src, kPattern, sizeof(src));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p_big, big));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&guard, 1u)); /* pins the head */
+    alias = p_big;
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_free(&buf_, (void **)&p_big)); /* parked DS_FREE */
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p_small, small));
+    TEST_ASSERT_EQUAL_PTR_MESSAGE(alias, p_small, "precondition: the parked block is reused");
+    (void)memset(p_small, kPrefill, big);
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_safe_memory_copy(&buf_, p_small, src, small));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_NO_MEMORY, ds_safe_memory_copy(&buf_, p_small, src, big));
+    for (i = small; i < big; i++) {
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE(kPrefill, p_small[i],
+                                       DS_TEST_MSG("byte %zu modified by a rejected call", i));
+    }
+}
+
+void test_Safe_Memory_Copy_Rejects_Spare_Capacity_After_Shrink(void)
+{
+    const size_t len = DS_TEST_ALIGN_UP(16u);
+    uint8_t *p = NULL;
+    uint8_t *before;
+    uint8_t src[DS_TEST_ALIGN_UP(64u)];
+    size_t i;
+
+    (void)memset(src, kPattern, sizeof(src));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_malloc(&buf_, (void **)&p, len));
+    before = p;
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_realloc(&buf_, (void **)&p, 1u));
+    TEST_ASSERT_EQUAL_PTR_MESSAGE(before, p, "precondition: shrink happens in place");
+    (void)memset(p, kPrefill, len);
+
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_OK, ds_safe_memory_copy(&buf_, p, src, 1u));
+    TEST_ASSERT_EQUAL_UINT(ERROR_DS_NO_MEMORY, ds_safe_memory_copy(&buf_, p, src, 4u));
+    for (i = 1u; i < len; i++) {
+        TEST_ASSERT_EQUAL_HEX8_MESSAGE(kPrefill, p[i],
+                                       DS_TEST_MSG("byte %zu modified by a rejected call", i));
     }
 }
