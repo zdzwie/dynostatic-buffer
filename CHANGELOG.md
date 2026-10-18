@@ -7,15 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-18
+
 ### Added
 
 - Tracking of requested memory size and alignment size in the memory management functions.
 - Adding Ceedling framework for unit testing to enhance test coverage and reliability.
 - Adding ASan+UBSan checking during tests.
+- Script `scripts/clang-format/run-clang-format.sh` to check (`--check`) or fix formatting of every tracked C/C++ file.
 
 ### Fixed
 
-- Fixed memory allocation problem when requested by user memory size is different than alignment size.
+- `ds_realloc` moving a block now copies only the bytes the caller requested, not the block's whole aligned capacity. Previously, after shrinking a block, stale bytes past the new size were carried into the new block.
+- `ds_get_memory_usage` no longer overflows and reports wrong percentages on 16-bit targets, or on 32-bit targets with large buffers; the percentage is computed in `uint32_t`. A static assert now rejects `DS_BUFFER_MEMORY_SIZE` above `UINT32_MAX / 100` (about 41 MiB).
 - Fixed undefined behaviour in `ds_safe_memory_copy` when source and destination overlap; such calls now return `ERROR_DS_INVALID_ARG`.
 - `ds_safe_memory_copy` and `ds_safe_memory_set` now bound writes by the size the caller requested instead of the block's capacity. Writes into alignment padding or into the spare capacity of a reused or shrunk block now return `ERROR_DS_NO_MEMORY`.
 
@@ -26,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DS_ALIGNMENT` is now a build option in CMake (`-DDS_ALIGNMENT=<n>`), Bazel (`--//library:alignment=<n>`) and Make (`DS_ALIGNMENT=<n>`). When set, it is passed to the library and all its consumers like the other layout defines; previously a value set only for the library gave consumers a different `dynostatic_buffer_t` layout. Left unset, the header default applies as before.
 - Default `DS_ALIGNMENT` is now `alignof(ds_max_align_t)` (16 on typical 64-bit hosts) instead of 4, so returned pointers are aligned for any fundamental type like `malloc` (previously 8-byte types such as `uint64_t`, `double` and 64-bit pointers could be misaligned). This changes the layout of `dynostatic_buffer_t` and the per-block rounding; custom `DS_MAX_ALLOCATION_SIZE` values must now be a multiple of the new alignment. Define `DS_ALIGNMENT` explicitly to keep the old behaviour. The new default is an `alignof` expression rather than an integer literal, so code that tests `DS_ALIGNMENT` in a preprocessor `#if` must define it explicitly.
 - Each allocator record (`ds_allocator_t`) now also stores the requested size, one extra `size_t`: 16 instead of 12 bytes on typical 32-bit targets, 32 instead of 24 on 64-bit. An instance grows by `DS_MAX_ALLOCATION_COUNT` times that difference, and the layout of `dynostatic_buffer_t` changes, so code built against 1.0.0 must be recompiled.
+- The Bazel build now requires Bazel 9 (pinned to 9.2.0 in `.bazelversion`) and uses GoogleTest `1.17.0.bcr.2` and `bazel_skylib` from the Bazel Central Registry.
 
 ## [1.0.0] - 2026-08-16
 
@@ -56,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adding CMake build system for cross-platform compatibility
 - Implemented tests for TDD paradigm
 
-[unreleased]: https://github.com/zdzwie/dynostatic-buffer/compare/v1.0...HEAD
+[unreleased]: https://github.com/zdzwie/dynostatic-buffer/compare/v1.1...HEAD
+[1.1.0]: https://github.com/zdzwie/dynostatic-buffer/compare/v1.0...v1.1
 [1.0.0]: https://github.com/zdzwie/dynostatic-buffer/compare/v0.1...v1.0
 [0.1.0]: https://github.com/zdzwie/dynostatic-buffer/releases/tag/v0.1
