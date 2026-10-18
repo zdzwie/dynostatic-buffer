@@ -77,6 +77,13 @@ typedef struct {
  * any object type (double, uint64_t, pointers, ...). It may be lowered on
  * purpose to save memory on small targets, but then returned pointers are only
  * valid for types with alignof <= DS_ALIGNMENT.
+ *
+ * It cannot be raised above the default: over-alignment (e.g. 32 or 64 for
+ * cache lines or DMA) is rejected at compile time.
+ *
+ * The default is an alignof expression, not an integer literal, so it cannot
+ * be used in a preprocessor #if; define DS_ALIGNMENT explicitly if you need
+ * that.
  */
 #ifndef DS_ALIGNMENT
     #define DS_ALIGNMENT ((size_t)alignof(ds_max_align_t))

@@ -4,7 +4,7 @@
 # lcov coverage report (text summary + HTML).
 #
 # Usage:
-#   scripts/coverage/run_coverage.sh [build_dir] [output_dir]
+#   scripts/lcov/run_coverage.sh [build_dir] [output_dir]
 #
 # Defaults:
 #   build_dir  = build/coverage

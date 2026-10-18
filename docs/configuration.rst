@@ -58,8 +58,8 @@ Options
    Alignment, in bytes, of every returned pointer and the rounding granularity
    for block capacities. Must be a power of two, at least the alignment of a
    32-bit type, and no larger than the platform's strictest fundamental
-   alignment. Larger values waste more to internal rounding but satisfy stricter
-   types (e.g. SIMD or DMA buffers).
+   alignment. Over-alignment (e.g. ``32`` or ``64`` for cache lines, SIMD or DMA
+   buffers) is therefore not supported and fails to compile.
 
    The default matches ``malloc``: returned pointers are suitable for any
    fundamental type. Lowering it (e.g. to ``4`` on a small MCU) saves memory, but
@@ -72,6 +72,10 @@ Options
    value explicitly. Every build system then passes it to the library and
    to all of its consumers: CMake ``-DDS_ALIGNMENT=8``, Make
    ``DS_ALIGNMENT=8``, Bazel ``--//library:alignment=8``.
+
+   The default is an ``alignof`` expression, not an integer literal, so it
+   cannot be used in a preprocessor ``#if``. Define ``DS_ALIGNMENT``
+   explicitly if your code needs that.
 
 .. c:macro:: DS_ZERO_ON_FREE
 
@@ -116,8 +120,8 @@ An instance costs approximately::
    DS_BUFFER_MEMORY_SIZE  +  DS_MAX_ALLOCATION_COUNT * sizeof(ds_allocator_t)
 
 bytes (plus a small fixed header and any padding). ``sizeof(ds_allocator_t)`` is
-two ``size_t`` fields and an enum, so on a 32-bit target each record is on the
-order of a dozen bytes. Two forces pull in opposite directions:
+three ``size_t`` fields and an enum: 16 bytes on a typical 32-bit target and 32
+bytes on a typical 64-bit one. Two forces pull in opposite directions:
 
 * **Raising** ``DS_MAX_ALLOCATION_COUNT`` lets you hold more concurrent blocks
   but grows every instance, even ones that never use all the slots.

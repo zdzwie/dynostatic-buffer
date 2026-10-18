@@ -24,9 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DS_ZERO_ON_FREE` is now enabled by default in the header and in every build system (CMake, Bazel, Make), matching the documented contract; set it to `0` to keep the old behaviour (CMake `-DDS_ZERO_ON_FREE=OFF`, Make `DS_ZERO_ON_FREE=0`, Bazel `--//library:zero_on_free=false`). The define is now public, so consumers and the unit tests see the policy the library was built with, and any non-zero value enables it (previously only `1`). The unit tests run in both modes.
 - Documented that double-free detection in `ds_free` and `ds_realloc` is best-effort: once a later allocation reuses a freed block's address, a stale copy of the old pointer is accepted and acts on the new owner's block.
 - `DS_ALIGNMENT` is now a build option in CMake (`-DDS_ALIGNMENT=<n>`), Bazel (`--//library:alignment=<n>`) and Make (`DS_ALIGNMENT=<n>`). When set, it is passed to the library and all its consumers like the other layout defines; previously a value set only for the library gave consumers a different `dynostatic_buffer_t` layout. Left unset, the header default applies as before.
-- Default `DS_ALIGNMENT` is now `alignof(ds_max_align_t)` (16 on typical 64-bit hosts) instead of 4, so returned pointers are aligned for any fundamental type like `malloc` (previously 8-byte types such as `uint64_t`, `double` and 64-bit pointers could be misaligned). This changes the layout of `dynostatic_buffer_t` and the per-block rounding; custom `DS_MAX_ALLOCATION_SIZE` values must now be a multiple of the new alignment. Define `DS_ALIGNMENT` explicitly to keep the old behaviour.
+- Default `DS_ALIGNMENT` is now `alignof(ds_max_align_t)` (16 on typical 64-bit hosts) instead of 4, so returned pointers are aligned for any fundamental type like `malloc` (previously 8-byte types such as `uint64_t`, `double` and 64-bit pointers could be misaligned). This changes the layout of `dynostatic_buffer_t` and the per-block rounding; custom `DS_MAX_ALLOCATION_SIZE` values must now be a multiple of the new alignment. Define `DS_ALIGNMENT` explicitly to keep the old behaviour. The new default is an `alignof` expression rather than an integer literal, so code that tests `DS_ALIGNMENT` in a preprocessor `#if` must define it explicitly.
+- Each allocator record (`ds_allocator_t`) now also stores the requested size, one extra `size_t`: 16 instead of 12 bytes on typical 32-bit targets, 32 instead of 24 on 64-bit. An instance grows by `DS_MAX_ALLOCATION_COUNT` times that difference, and the layout of `dynostatic_buffer_t` changes, so code built against 1.0.0 must be recompiled.
 
-## [1.0.0] - 2026.08.16
+## [1.0.0] - 2026-08-16
 
 ### Added
 - Added support for advanced memory management features.
@@ -46,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adding checking by cppcheck to perform static analysis and detect potential bugs and vulnerabilities.
 - Adding checking by MISRA:2012 to ensure compliance with industry standards for safety-critical systems.
 
-## [0.1.0] - 2022.07.24
+## [0.1.0] - 2022-07-24
 
 ### Added
 - Initial release of the project with basic functionality and features.
